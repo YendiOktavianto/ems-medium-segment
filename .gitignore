@@ -1,0 +1,7 @@
+node_modules
+.env
+apps/**/.env
+.turbo
+.next
+dist
+coverage
