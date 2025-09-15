@@ -15,9 +15,12 @@ export default function Home() {
         />
         <ol>
           <li>
-            Get started by editing <code>src/app/page.tsx</code>.
+            <div className='w-96 h-96 bg-amber-300'>
+
+            </div>
+             <code>src/app/page.tsx</code>.
           </li>
-          <li>Save and see your changes instantly.</li>
+          <li className='font-inter'>Save and see your changes instantly.</li>
         </ol>
 
         <div className={styles.ctas}>
