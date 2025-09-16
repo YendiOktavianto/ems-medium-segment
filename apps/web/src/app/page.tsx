@@ -1,77 +1,102 @@
-import Image from 'next/image';
-import styles from './page.module.css';
+"use client";
+
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const router = useRouter(); 
+  
+  const handleRegisterRedirect = () => {
+    router.push("/register"); 
+  };
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+  const handleForgotPasswordRedirect = () => {
+    router.push("/forgot"); 
+  };
+
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center bg-cover bg-center"
+      style={{ backgroundImage: "url('/bg1.png')" }}
+    >
+      <div className="px-10 py-8 bg-gray-800/60 rounded-2xl shadow-lg w-full max-w-[440px] flex flex-col items-center">
+        {/* Logo */}
+        <Image src="/logo.svg" alt="Logo" width={100} height={100} className="mb-2" />
+
+        {/* Heading */}
+        <h1 className="text-2xl font-bold text-center text-white leading-relaxed mb-6">
+          Welcome to <br /> Power Management System
+        </h1>
+
+        {/* Form */}
+        <form className="flex flex-col w-full gap-4">
+          {/* Input Username */}
+          <div className="h-12 flex items-center bg-[#3A3A3A]/40 rounded-full px-4 text-white">
             <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
+              src="/user.svg"
+              alt="user"
               width={20}
               height={20}
+              className="mr-3 opacity-70"
             />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
+            <input
+              type="text"
+              placeholder="Username"
+              className="bg-transparent outline-none w-full placeholder-gray-400"
+            />
+          </div>
+
+          {/* Input Password */}
+          <div className="h-12 flex items-center bg-[#3A3A3A]/40 rounded-full px-4 text-white">
+            <Image
+              src="/pw.svg"
+              alt="password"
+              width={20}
+              height={20}
+              className="mr-3 opacity-70"
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              className="bg-transparent outline-none w-full placeholder-gray-400"
+            />
+          </div>
+
+          {/* Remember Me + Forgot Password */}
+          <div className="flex items-center justify-between text-sm text-gray-300 mt-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                className="w-3.5 h-3.5 rounded-3xl border-[#414141] accent-[#2196F3]"
+              />
+              Remember me
+            </label>
+            <button
+              type="button"
+              onClick={handleForgotPasswordRedirect}
+              className="text-white hover:underline"
+            >
+              Forgot password?
+            </button>
+          </div>
+
+          {/* Button */}
+          <button
+            type="submit"
+            className="shadow-xl bg-[#2196F3] hover:bg-[#1A78C2] text-white font-semibold rounded-full w-full h-12 transition-all duration-200 mt-4"
           >
-            Read our docs
-          </a>
+            Login
+          </button>
+        </form>
+
+        {/* Register */}
+        <div className="text-sm text-gray-300 mt-5">
+          Dont have an account?{" "}
+          <button type="button" onClick={handleRegisterRedirect} className="text-white hover:underline">
+            Register
+          </button>
         </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image aria-hidden src="/file.svg" alt="File icon" width={16} height={16} />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image aria-hidden src="/window.svg" alt="Window icon" width={16} height={16} />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image aria-hidden src="/globe.svg" alt="Globe icon" width={16} height={16} />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
     </div>
   );
 }
