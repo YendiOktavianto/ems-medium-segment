@@ -1,7 +1,11 @@
 {
+  "dependencies": {
+    "@nestjs/mapped-types": "*"
+  },
   "name": "ems-medium-segment",
+  "version": "0.0.1",
   "private": true,
-  "packageManager": "pnpm@10.15.0",
+  "packageManager": "npm@10.9.3",
   "workspaces": [
     "apps/*",
     "packages/*"
