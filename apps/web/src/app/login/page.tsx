@@ -1,22 +1,35 @@
+"use client";
+
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter(); 
+  
+  const handleRegisterRedirect = () => {
+    router.push("/register"); 
+  };
+
+  const handleForgotPasswordRedirect = () => {
+    router.push("/forgot"); 
+  };
+
   return (
     <div
       className="min-h-screen flex items-center justify-center bg-cover bg-center"
-      style={{ backgroundImage: "url('/bg2.png')" }}
+      style={{ backgroundImage: "url('/bg1.png')" }}
     >
-      <div className="px-10 py-5 bg-gray-800/60 rounded-2xl shadow-lg w-[440px] flex flex-col items-center">
+      <div className="px-10 py-8 bg-gray-800/60 rounded-2xl shadow-lg w-full max-w-[440px] flex flex-col items-center">
         {/* Logo */}
-        <Image src="/logo.svg" alt="Logo" width={100} height={100} className="mx-2" />
+        <Image src="/logo.svg" alt="Logo" width={100} height={100} className="mb-2" />
 
         {/* Heading */}
-        <h1 className="text-2xl font-bold text-center text-white leading-relaxed mb-8">
+        <h1 className="text-2xl font-bold text-center text-white leading-relaxed mb-6">
           Welcome to <br /> Power Management System
         </h1>
 
         {/* Form */}
-        <form className="flex flex-col w-80 gap-5">
+        <form className="flex flex-col w-full gap-4">
           {/* Input Username */}
           <div className="h-12 flex items-center bg-[#3A3A3A]/40 rounded-full px-4 text-white">
             <Image
@@ -50,17 +63,18 @@ export default function Home() {
           </div>
 
           {/* Remember Me + Forgot Password */}
-          <div className="flex items-center justify-between text-sm text-gray-300">
+          <div className="flex items-center justify-between text-sm text-gray-300 mt-4">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                className="w-3.5 h-3.5 rounded-sm border-[#414141] accent-[#2196F3]"
+                className="w-3.5 h-3.5 rounded-3xl border-[#414141] accent-[#2196F3]"
               />
               Remember me
             </label>
             <button
               type="button"
-              className="text-[#2196F3] hover:underline"
+              onClick={handleForgotPasswordRedirect}
+              className="text-white hover:underline"
             >
               Forgot password?
             </button>
@@ -69,16 +83,16 @@ export default function Home() {
           {/* Button */}
           <button
             type="submit"
-            className="shadow-xl bg-[#2196F3] hover:bg-blue-600 text-white font-semibold py-2 rounded-full w-full h-12 transition-all duration-200 mt-5"
+            className="shadow-xl bg-[#2196F3] hover:bg-[#1A78C2] text-white font-semibold rounded-full w-full h-12 transition-all duration-200 mt-4"
           >
             Login
           </button>
         </form>
 
-        {/* Have account Register */}
-        <div className="text-sm text-gray-300 mt-5 mb-3">
+        {/* Register */}
+        <div className="text-sm text-gray-300 mt-5">
           Don't have an account?{" "}
-          <button type="button" className="text-blue-400 hover:underline">
+          <button type="button" onClick={handleRegisterRedirect} className="text-white hover:underline">
             Register
           </button>
         </div>
@@ -86,4 +100,3 @@ export default function Home() {
     </div>
   );
 }
-
