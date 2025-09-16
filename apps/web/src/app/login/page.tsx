@@ -4,34 +4,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
-<<<<<<< HEAD
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            <div className='w-96 h-96 bg-amber-300'>
-
-            </div>
-             <code>src/app/page.tsx</code>.
-          </li>
-          <li className='font-inter'>Save and see your changes instantly.</li>
-        </ol>
-=======
   const router = useRouter(); 
   
   const handleRegisterRedirect = () => {
     router.push("/register"); 
   };
->>>>>>> origin/main
 
   const handleForgotPasswordRedirect = () => {
     router.push("/forgot"); 
@@ -114,7 +91,7 @@ export default function Home() {
 
         {/* Register */}
         <div className="text-sm text-gray-300 mt-5">
-          Dont have an account?{" "}
+          Don't have an account?{" "}
           <button type="button" onClick={handleRegisterRedirect} className="text-white hover:underline">
             Register
           </button>
