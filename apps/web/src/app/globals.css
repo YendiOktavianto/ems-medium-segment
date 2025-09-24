@@ -22,3 +22,32 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* untuk browser berbasis webkit (chrome, edge, safari) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  background: transparent; /* transparan supaya konten di bawah keliatan */
+  position: absolute; /* biar tumpuk */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent; /* track hilang */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 47, 108, 0.5); /* biru navy transparan */
+  border-radius: 9999px;
+  border: 2px solid transparent; /* kasih spasi biar efek overlay */
+  background-clip: content-box; /* biar ada ruang transparan */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 47, 108, 0.7);
+}
+
+
+/* 🦊 firefox */
+.custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(226, 226, 226, 0.5) transparent;
+}

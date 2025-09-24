@@ -31,7 +31,7 @@ export default function Home() {
         {/* Form */}
         <form className="flex flex-col w-full gap-4">
           {/* Input Username */}
-          <div className="h-12 flex items-center bg-[#3A3A3A]/40 rounded-full px-4 text-white">
+          <div className="w-full h-12 flex items-center px-4 bg-[#3A3A3A]/40 rounded-full py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition duration-150">
             <Image
               src="/user.svg"
               alt="user"
@@ -41,7 +41,7 @@ export default function Home() {
             />
             <input
               type="text"
-              placeholder="Username"
+              placeholder="Username or Email"
               className="bg-transparent outline-none w-full placeholder-gray-400"
             />
           </div>
