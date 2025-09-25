@@ -1,7 +1,4 @@
 {
-  "dependencies": {
-    "@nestjs/mapped-types": "*"
-  },
   "name": "ems-medium-segment",
   "version": "0.0.1",
   "private": true,
@@ -19,6 +16,7 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.10",
+    "@types/passport-jwt": "^4.0.1",
     "cross-env": "^10.0.0",
     "turbo": "^2.0.0",
     "typescript": "^5.9.2"
