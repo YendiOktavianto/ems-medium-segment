@@ -300,6 +300,7 @@ export default function Dashboard() {
                 type="monotone"
                 dataKey="EnergyUsage"
                 stroke="#5bd3ff"
+                dot={{ r: 3 }}
                 fill="rgba(91,211,255,0.2)"
                 strokeWidth={2}
             />
@@ -307,6 +308,7 @@ export default function Dashboard() {
                 type="monotone"
                 dataKey="Frequency"
                 stroke="#ffd75b"
+                dot={{ r: 3 }}
                 fill="rgba(255,215,91,0.2)"
                 strokeWidth={2}
             />
@@ -314,6 +316,7 @@ export default function Dashboard() {
                 type="monotone"
                 dataKey="Power"
                 stroke="#ff7b5b"
+                dot={{ r: 3 }}
                 fill="rgba(255,123,91,0.2)"
                 strokeWidth={2}
             />
@@ -321,6 +324,7 @@ export default function Dashboard() {
                 type="monotone"
                 dataKey="PowerFactor"
                 stroke="#FF00FF"
+                dot={{ r: 3 }}
                 fill="rgba(255,0,255,0.2)"
                 strokeWidth={2}
             />
@@ -328,6 +332,7 @@ export default function Dashboard() {
                 type="monotone"
                 dataKey="Voltage"
                 stroke="#1E90FF"
+                dot={{ r: 3 }}
                 fill="rgba(30,144,255,0.2)"
                 strokeWidth={2}
             />

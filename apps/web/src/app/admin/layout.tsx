@@ -24,14 +24,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setSelectedPage("Device Management");
     } else if (currentPath.includes("device-request")) {
       setSelectedPage("Device Request");
-    } else if (currentPath.includes("power-monitoring")) {
-      setSelectedPage("Power Monitoring");
     } else if (currentPath.includes("summary-report")) {
       setSelectedPage("Summary Report");
     } else if (currentPath.includes("energy-usage-report")) {
       setSelectedPage("Energy Usage Report");
-    } else if (currentPath.includes("settings")) {
-      setSelectedPage("Settings");
     } else if (currentPath.includes("List Cost Energy")) {
       setSelectedPage("List Cost Energy");
     } else if (currentPath.includes("logout")) {

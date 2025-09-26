@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -12,8 +12,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-type Location = {
-  device_id: string;
+type GeneralInfo = {
+  serial_number: string;
   address_name: string;
   detail_location: string;
   watt_phase: string;
@@ -36,10 +36,10 @@ export default function Dashboard() {
   const [energyData, setEnergyData] = useState<{ time: string; value: number }[]>([]);
   const [allData, setAllData] = useState<any[]>([]);
 
-  const locations: Location[] = [
-    { device_id: "PQ-1000001A", address_name: "Jl. Kp Pamehan No 63 Jatiasih", detail_location: "Lantai 1", watt_phase: "2200VA / 1-Phase", segment: "Residential" },
-    { device_id: "PQ-1000001B", address_name: "Jl. Kp Pamehan No 63 Jatiasih", detail_location: "Lantai 2", watt_phase: "3300VA / 1-Phase", segment: "Commercial" },
-    { device_id: "PQ-1000002A", address_name: "Jl. Raya Bogor KM 20", detail_location: "Gudang A", watt_phase: "6600VA / 3-Phase", segment: "Industrial" },
+  const locations: GeneralInfo[] = [
+    { serial_number: "PQ-1000001A", address_name: "Jl. Kp Pamehan No 63 Jatiasih", detail_location: "Lantai 1", watt_phase: "2200VA / 1-Phase", segment: "Residential" },
+    { serial_number: "PQ-1000001B", address_name: "Jl. Kp Pamehan No 63 Jatiasih", detail_location: "Lantai 2", watt_phase: "3300VA / 1-Phase", segment: "Commercial" },
+    { serial_number: "PQ-1000002A", address_name: "Jl. Raya Bogor KM 20", detail_location: "Gudang A", watt_phase: "6600VA / 3-Phase", segment: "Industrial" },
   ];
 
   const [selectedLocation, setSelectedLocation] = useState(0);
@@ -184,14 +184,14 @@ export default function Dashboard() {
   const Chart = ({ data, domain, label, unit }: { data: { time: string; value: number }[]; domain: [number, number]; label: string; unit: string }) => (
     <div className="w-full bg-[#0C1F3C] rounded-xl p-4">
       <ResponsiveContainer width="100%" height={250}>
-        <LineChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+        <AreaChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
           <CartesianGrid stroke="#333" strokeDasharray="3 3" />
           <XAxis dataKey="time" tick={{ fill: "#fff", fontSize: 10 }} />
           <YAxis domain={domain} tick={{ fill: "#fff", fontSize: 10 }} label={{ value: label, angle: -90, position: "insideLeft", fill: "#fff" }} />
           <Tooltip contentStyle={{ backgroundColor: "#1E1E1E", border: "1px solid #555", color: "white" }} formatter={(v: number) => [`${v} ${unit}`, label]} />
           <Legend />
-          <Line type="monotone" dataKey="value" stroke="#1E90FF" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} name={`${label} (${unit})`} />
-        </LineChart>
+          <Area type="monotone" dataKey="value" stroke="#1E90FF" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} name={`${label} (${unit})`} />
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );
@@ -259,89 +259,106 @@ export default function Dashboard() {
 
 
   return (
-    <div
-      className="flex flex-col gap-8 rounded-2xl p-8 mx-auto mr-8 mb-8"
-      style={{
-        background:
-          "linear-gradient(90deg, rgba(6,11,40,0.74) 0%, rgba(10,14,35,0.71) 100%)",
-      }}
-    >
-      <h1 className="text-center text-2xl font-semibold text-white">Power Monitoring</h1>
-
-      {/* Device Info */}
-      <div className="flex flex-col sm:flex-row justify-between text-[9px] text-white gap-4">
-        <div>
-          <p className="uppercase tracking-wide opacity-70">Serial Number</p>
-          <p className="font-lg">{activeLoc?.device_id ?? "-"}</p>
-          <p className="mt-2 uppercase tracking-wide opacity-70">Location</p>
-          {locations.length > 1 ? (
-            <select
-              className="bg-[#0C1F3C] border border-gray-600 text-white px-2 py-1 rounded w-full sm:w-auto"
-              value={selectedLocation}
-              onChange={(e) => setSelectedLocation(Number(e.target.value))}
-            >
-              {locations.map((loc, idx) => (
-                <option key={idx} value={idx}>
-                  {loc.address_name} | {loc.detail_location}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <p className="font-lg">{activeLoc ? `${activeLoc.address_name} | ${activeLoc.detail_location}` : "-"}</p>
-          )}
+        <div
+          className="flex flex-col rounded-2xl p-8 mx-auto mr-8"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(6,11,40,0.74) 0%, rgba(10,14,35,0.71) 100%)",
+          }}
+        >
+          <h1 className="text-center text-2xl font-semibold text-white">Power Monitoring</h1>
+    
+          {/* Device Info */}
+          <div className="flex flex-col sm:flex-row justify-between text-[9px] text-white gap-4">
+            <div>
+              <p className="uppercase tracking-wide opacity-70">Serial Number</p>
+              <p className="font-lg">{activeLoc?.serial_number ?? "-"} </p>
+              <p className="mt-2 uppercase tracking-wide opacity-70">Location</p>
+              
+              {locations.length > 1 ? (
+                <select
+                  className="bg-[#0C1F3C] border border-gray-600 text-white px-2 py-1 rounded w-full sm:w-auto"
+                  value={selectedLocation}
+                  onChange={(e) => setSelectedLocation(Number(e.target.value))}
+                >
+                  {locations.map((loc, idx) => (
+                    <option key={idx} value={idx}>
+                        {loc.serial_number}
+                        {activeLoc?.address_name} | {activeLoc?.detail_location} 
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="font-lg">{activeLoc ? `${activeLoc.address_name} | ${activeLoc.detail_location}` : "-"}</p>
+              )}
+            </div>
+            <div className="text-left sm:text-right">
+              <p className="uppercase tracking-wide opacity-70">Wattage / Phase</p>
+              <p className="font-lg">{activeLoc?.watt_phase ?? "-"}</p>
+              <p className="mt-2 uppercase tracking-wide opacity-70">Segment</p>
+              <p className="font-lg">{activeLoc?.segment ?? "-"}</p>
+            </div>
+          </div>
+    
+          {/* All Data Chart */}
+          <div className="w-full bg-[#032d7a] rounded-xl p-2 mt-5">
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={allData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                <CartesianGrid stroke="#444" strokeDasharray="3 3" />
+                <XAxis dataKey="time" tick={{ fill: "#fff", fontSize: 10 }} />
+                <YAxis tick={{ fill: "#fff", fontSize: 10 }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Area
+                    type="monotone"
+                    dataKey="Current"
+                    stroke="#9bff5b"
+                    fill="rgba(155,255,91,0.2)"
+                    strokeWidth={2}
+                />
+                <Area
+                    type="monotone"
+                    dataKey="EnergyUsage"
+                    stroke="#5bd3ff"
+                    dot={{ r: 3 }}
+                    fill="rgba(91,211,255,0.2)"
+                    strokeWidth={2}
+                />
+                <Area
+                    type="monotone"
+                    dataKey="Frequency"
+                    stroke="#ffd75b"
+                    dot={{ r: 3 }}
+                    fill="rgba(255,215,91,0.2)"
+                    strokeWidth={2}
+                />
+                <Area
+                    type="monotone"
+                    dataKey="Power"
+                    stroke="#ff7b5b"
+                    dot={{ r: 3 }}
+                    fill="rgba(255,123,91,0.2)"
+                    strokeWidth={2}
+                />
+                <Area
+                    type="monotone"
+                    dataKey="PowerFactor"
+                    stroke="#FF00FF"
+                    dot={{ r: 3 }}
+                    fill="rgba(255,0,255,0.2)"
+                    strokeWidth={2}
+                />
+                <Area
+                    type="monotone"
+                    dataKey="Voltage"
+                    stroke="#1E90FF"
+                    dot={{ r: 3 }}
+                    fill="rgba(30,144,255,0.2)"
+                    strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-        <div className="text-left sm:text-right">
-          <p className="uppercase tracking-wide opacity-70">Wattage / Phase</p>
-          <p className="font-lg">{activeLoc?.watt_phase ?? "-"}</p>
-          <p className="mt-2 uppercase tracking-wide opacity-70">Segment</p>
-          <p className="font-lg">{activeLoc?.segment ?? "-"}</p>
-        </div>
-      </div>
-
-      {/* All Data Chart */}
-      <div className="w-full bg-[#0C1F3C] rounded-xl p-4">
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={allData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-            <CartesianGrid stroke="#333" strokeDasharray="3 3" />
-            <XAxis dataKey="time" tick={{ fill: "#fff", fontSize: 10 }} />
-            <YAxis tick={{ fill: "#fff", fontSize: 10 }} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
-            <Line type="monotone" dataKey="Voltage" stroke="#1E90FF" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="Current" stroke="#00FF00" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="Frequency" stroke="#FFFF00" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="PowerFactor" stroke="#FF00FF" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="Power" stroke="#FF4500" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="EnergyUsage" stroke="#00CED1" strokeWidth={2} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Gauges + Charts */}
-      <div className="flex flex-col md:flex-row gap-6">
-        <Gauge label="Voltage" value={voltage} min={0} max={300} unit="V" colorStops={[0.6,0.85,1]} />
-        <Chart data={voltageData} domain={[0,300]} label="Voltage" unit="V" />
-      </div>
-      <div className="flex flex-col md:flex-row gap-6">
-        <Gauge label="Current" value={current} min={0} max={50} unit="A" colorStops={[0.5,0.8,1]} />
-        <Chart data={currentData} domain={[0,50]} label="Current" unit="A" />
-      </div>
-      <div className="flex flex-col md:flex-row gap-6">
-        <Gauge label="Frequency" value={frequency} min={49} max={51} unit="Hz" colorStops={[0.4,0.7,1]} />
-        <Chart data={freqData} domain={[49,51]} label="Frequency" unit="Hz" />
-      </div>
-      <div className="flex flex-col md:flex-row gap-6">
-        <Gauge label="Power Factor" value={powerFactor} min={0} max={1} unit="" colorStops={[0.5,0.8,1]} />
-        <Chart data={pfData} domain={[0,1]} label="Power Factor" unit="" />
-      </div>
-      <div className="flex flex-col md:flex-row gap-6">
-        <Gauge label="Power" value={power} min={0} max={4000} unit="W" colorStops={[0.6,0.85,1]} />
-        <Chart data={powerData} domain={[0,4000]} label="Power" unit="W" />
-      </div>
-      <div className="flex flex-col md:flex-row gap-6">
-        <Gauge label="Energy Usage" value={energyUsage} min={0} max={50} unit="kWh" colorStops={[0.5,0.8,1]} />
-        <Chart data={energyData} domain={[0,50]} label="Energy Usage" unit="kWh" />
-      </div>
-    </div>
   );
 }

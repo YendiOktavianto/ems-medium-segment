@@ -1,298 +1,269 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 "use client";
-import { useState, useEffect, useRef } from "react";
-import { GoogleMap, Marker, useLoadScript, Autocomplete } from "@react-google-maps/api";
 
-type Option = {
-  id: string;
-  nama: string;
-  parent_id?: string;
-  lat?: number;
-  lng?: number;
-  kode_pos?: string;
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState, useRef } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import PhoneInput from "react-phone-input-2";
+
+type FormState = {
+  email: string;
+  username: string;
+  phone_number: string;
+  password_hash: string;
+  confirmPassword: string;
 };
 
-export default function AddDevicePage() {
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-    libraries: ["places"],
+export default function Register() {
+  const router = useRouter();
+
+  const [form, setForm] = useState<FormState>({
+    email: "",
+    username: "",
+    phone_number: "",
+    password_hash: "",
+    confirmPassword: "",
   });
 
-  const [allData, setAllData] = useState<Option[]>([]);
-  const [provinsi, setProvinsi] = useState<Option[]>([]);
-  const [kabupaten, setKabupaten] = useState<Option[]>([]);
-  const [kecamatan, setKecamatan] = useState<Option[]>([]);
-  const [kelurahan, setKelurahan] = useState<Option[]>([]);
+  const [errors, setErrors] = useState<FormState>({
+    email: "",
+    username: "",
+    phone_number: "",
+    password_hash: "",
+    confirmPassword: "",
+  });
 
-  const [marker, setMarker] = useState({ lat: -6.1751, lng: 106.865 });
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  // separate state for each password input
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const initialForm = {
-    nama_jalan: "",
-    provinsi_id: "",
-    kabupaten_id: "",
-    kecamatan_id: "",
-    kelurahan_id: "",
-    kode_pos: "",
-    segmen: "",
-    detail_address: "",
-    lat: -6.1751,
-    lng: 106.865,
+  const refs = {
+    email: useRef<HTMLInputElement | null>(null),
+    username: useRef<HTMLInputElement | null>(null),
+    password: useRef<HTMLInputElement | null>(null),
+    confirmPassword: useRef<HTMLInputElement | null>(null),
   };
 
-  const [form, setForm] = useState(initialForm);
-  const [loading, setLoading] = useState(false);
-  const [requestId, setRequestId] = useState<number | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    setErrors({ ...errors, [e.target.name]: "" });
+  };
 
-  // Load data.json
-  useEffect(() => {
-    fetch("/data/data.json")
-      .then((res) => res.json())
-      .then((json) => {
-        setAllData(json);
-        setProvinsi(json.filter((d: Option) => !d.parent_id));
-      })
-      .catch((err) => console.error("Failed to load data.json:", err));
-  }, []);
+  const validateForm = (form: FormState) => {
+    let newErrors: FormState = {
+      email: "",
+      username: "",
+      phone_number: "",
+      password_hash: "",
+      confirmPassword: "",
+    };
 
-  // Cascade dropdowns
-  useEffect(() => {
-    if (form.provinsi_id) {
-      setKabupaten(allData.filter((d) => d.parent_id === form.provinsi_id));
-      setKecamatan([]);
-      setKelurahan([]);
-      setForm((prev) => ({ ...prev, kabupaten_id: "", kecamatan_id: "", kelurahan_id: "" }));
-    } else setKabupaten([]), setKecamatan([]), setKelurahan([]);
-  }, [form.provinsi_id, allData]);
+    if (!form.email) newErrors.email = "email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+      newErrors.email = "please enter a valid email address";
 
-  useEffect(() => {
-    if (form.kabupaten_id) {
-      setKecamatan(allData.filter((d) => d.parent_id === form.kabupaten_id));
-      setKelurahan([]);
-      setForm((prev) => ({ ...prev, kecamatan_id: "", kelurahan_id: "" }));
-    } else setKecamatan([]), setKelurahan([]);
-  }, [form.kabupaten_id, allData]);
+    if (!form.username) newErrors.username = "username is required";
+    else if (form.username.length < 3)
+      newErrors.username = "username must be at least 3 characters";
 
-  useEffect(() => {
-    if (form.kecamatan_id) {
-      setKelurahan(allData.filter((d) => d.parent_id === form.kecamatan_id));
-      setForm((prev) => ({ ...prev, kelurahan_id: "" }));
-    } else setKelurahan([]);
-  }, [form.kecamatan_id, allData]);
+    const numericPhone = form.phone_number.replace(/\D/g, "");
+    if (!form.phone_number) newErrors.phone_number = "phone number is required";
+    else if (form.phone_number.length < 9) newErrors.phone_number = "phone number is too short";
+    else if (form.phone_number.length > 15) newErrors.phone_number = "phone number is too long";
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    if (!form.password_hash) newErrors.password_hash = "password is required";
+    else if (form.password_hash.length < 8)
+      newErrors.password_hash = "password must be at least 8 characters";
+    else if (
+      !/(?=.*[A-Za-z])/.test(form.password_hash) ||
+      !/(?=.*\d)/.test(form.password_hash) ||
+      !/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/g.test(form.password_hash)
+    )
+      newErrors.password_hash =
+        "password must include letters, numbers, and special characters";
 
-    if (["provinsi_id", "kabupaten_id", "kecamatan_id", "kelurahan_id"].includes(name)) {
-      const opt = allData.find((d) => d.id === value || d.nama === value);
-      if (opt) setForm((prev) => ({ ...prev, [name]: opt.id }));
-    }
+    if (!form.confirmPassword) newErrors.confirmPassword = "confirm password is required";
+    else if (form.confirmPassword !== form.password_hash)
+      newErrors.confirmPassword = "confirm password does not match";
 
-    if (name === "kelurahan_id") {
-      const kel = allData.find((d) => d.id === value || d.nama === value);
-      if (kel) {
-        setForm((prev) => ({
-          ...prev,
-          kode_pos: kel.kode_pos || prev.kode_pos,
-          lat: kel.lat || prev.lat,
-          lng: kel.lng || prev.lng,
-        }));
-        if (kel.lat && kel.lng) setMarker({ lat: kel.lat, lng: kel.lng });
+    return newErrors;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrors = validateForm(form);
+    setErrors(newErrors);
+
+    if (Object.values(newErrors).every((err) => err === "")) {
+      try {
+        const res = await fetch("http://localhost:3000/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (data.message?.toLowerCase().includes("username")) {
+            setErrors({ ...errors, username: data.message });
+          } else if (data.message?.toLowerCase().includes("email")) {
+            setErrors({ ...errors, email: data.message });
+          } else {
+            setErrors({ ...errors, password_hash: "registration failed, please try again" });
+          }
+        } else {
+          router.push("/login");
+        }
+      } catch {
+        setErrors({
+          ...errors,
+          email: "server error, please try again later",
+        });
       }
     }
   };
 
-  const onPlaceChanged = () => {
-    if (autocompleteRef.current) {
-      const place = autocompleteRef.current.getPlace();
-      if (place?.geometry?.location) {
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        setMarker({ lat, lng });
-        setForm((prev) => ({ ...prev, lat, lng, nama_jalan: place.formatted_address || prev.nama_jalan }));
-      }
-    }
+  const handleLoginRedirect = () => {
+    router.push("/login");
   };
-
-  const handleSubmit = async () => {
-    if (!form.nama_jalan) return alert("Alamat wajib diisi");
-    setLoading(true);
-
-    try {
-      const prov = allData.find((d) => d.id === form.provinsi_id)?.nama || form.provinsi_id;
-      const kab = allData.find((d) => d.id === form.kabupaten_id)?.nama || form.kabupaten_id;
-      const kec = allData.find((d) => d.id === form.kecamatan_id)?.nama || form.kecamatan_id;
-      const kel = allData.find((d) => d.id === form.kelurahan_id)?.nama || form.kelurahan_id;
-
-      const address = `${form.nama_jalan}, ${kel}, ${kec}, ${kab}, ${prov}, ${form.kode_pos}`;
-
-      const payload = {
-        address,
-        segmen: form.segmen,
-        detail_address: form.detail_address,
-        lat: form.lat,
-        lng: form.lng,
-      };
-
-      const res = await fetch("/api/device-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      setRequestId(data.id);
-      setStatus(data.status);
-    } catch (err) {
-      console.error(err);
-      alert("Gagal kirim request");
-    }
-
-    setLoading(false);
-  };
-
-  // Polling status
-  useEffect(() => {
-    if (!requestId) return;
-    const interval = setInterval(() => {
-      fetch(`/api/device-status?id=${requestId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setStatus(data.status);
-          if (["approved", "rejected"].includes(data.status)) clearInterval(interval);
-        })
-        .catch(console.error);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [requestId]);
-
-  const handleReset = () => {
-    setForm(initialForm);
-    setMarker({ lat: -6.1751, lng: 106.865 });
-    setRequestId(null);
-    setStatus(null);
-  };
-
-  if (!isLoaded) return <div className="text-white text-[10px]">Loading Map...</div>;
-
-  const inputClass =
-    "w-full h-7 px-2 bg-[#1E3A8A]/30 rounded-lg text-white text-[10px] placeholder-blue-200 " +
-    "focus:ring-1 focus:ring-blue-400 outline-none transition duration-150 pointer-events-auto";
 
   return (
-    <div className="rounded-xl p-2 mx-auto mr-8" style={{ background: "linear-gradient(90deg, rgba(6,11,40,0.74) 0%, rgba(10,14,35,0.71) 100%)" }}>
-      <h2 className="text-sm font-bold text-white text-center mb-2 w-full md:w-auto">Request New Device</h2>
-      <div className="flex flex-col md:flex-row w-full max-w-7xl bg-[#15204f]/90 backdrop-blur-md rounded-xl shadow-md p-3 border border-blue-500 gap-3">
-        
-        {/* Form selalu muncul */}
-        <div className="flex flex-col md:w-1/2 gap-1 overflow-hidden pointer-events-auto">
-          <div className="space-y-3">
-            <label className="text-[9px] font-medium text-gray-300">Street</label>
-            <Autocomplete onLoad={(ref) => (autocompleteRef.current = ref)} onPlaceChanged={onPlaceChanged}>
-              <input name="nama_jalan" value={form.nama_jalan} onChange={handleChange} className={inputClass} placeholder="Street name, number" />
-            </Autocomplete>
+    <div
+      className="h-screen w-screen flex items-center justify-center bg-cover bg-center overflow-hidden"
+      style={{ backgroundImage: "url('/bg1.png')" }}
+    >
+      <div className="px-8 py-5 bg-gray-800/60 backdrop-blur-sm rounded-2xl shadow-xl
+        w-full max-w-[440px] text-sm flex flex-col items-center
+        max-h-[96vh] overflow-y-auto custom-scroll"
+      >
+        <div className="flex items-center w-full mb-6">
+          <Image src="/logo.svg" alt="Logo" width={65} height={65} className="mr-4" />
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold text-white leading-tight">Create Your Account</h1>
+            <p className="text-[12px] text-gray-300 leading-tight mt-1">
+              Sign up to start managing your devices with ease.
+            </p>
+          </div>
+        </div>
+
+        <form className="flex flex-col w-full gap-4" onSubmit={handleSubmit}>
+          {/* email */}
+          <div>
+            <div className="w-full flex items-center px-4 h-10 bg-gray-800 rounded-full text-white">
+              <Image src="/email.svg" alt="email" width={17} height={19} className="mr-3 opacity-70" />
+              <input
+                type="text"
+                name="email"
+                placeholder="Email"
+                value={form.email}
+                onChange={handleChange}
+                ref={refs.email}
+                className="bg-transparent outline-none w-full placeholder-gray-400 text-[14px]"
+              />
+            </div>
+            {errors.email && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.email}</p>}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            {[
-              { label: "Province", name: "provinsi_id", options: provinsi },
-              { label: "Regency/City", name: "kabupaten_id", options: kabupaten },
-              { label: "District", name: "kecamatan_id", options: kecamatan },
-              { label: "Sub-district", name: "kelurahan_id", options: kelurahan },
-            ].map(({ label, name, options }) => (
-              <div key={name} className="space-y-3 relative">
-                <label className="text-[9px] font-medium text-gray-300">{label}</label>
-                <input
-                  list={`${name}-list`}
-                  name={name}
-                  value={(form as any)[name]}
-                  onChange={handleChange}
-                  className={inputClass}
-                  placeholder={`Type or select ${label}`}
-                />
-                <datalist id={`${name}-list`}>
-                  {options.map((opt) => (
-                    <option key={opt.id} value={opt.nama} />
-                  ))}
-                </datalist>
-              </div>
-            ))}
+          {/* username */}
+          <div>
+            <div className="w-full flex items-center px-4 h-10 bg-gray-800 rounded-full text-white">
+              <Image src="/user.svg" alt="user" width={17} height={19} className="mr-3 opacity-70" />
+              <input
+                type="text"
+                name="username"
+                placeholder="Username"
+                value={form.username}
+                onChange={handleChange}
+                ref={refs.username}
+                className="bg-transparent outline-none w-full placeholder-gray-400 text-[14px]"
+              />
+            </div>
+            {errors.username && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.username}</p>}
           </div>
 
-          <div className="space-y-3">
-            <label className="text-[9px] font-medium text-gray-300">Postal Code</label>
-            <input name="kode_pos" value={form.kode_pos} onChange={handleChange} className={inputClass} placeholder="Postal Code" />
+          {/* phone */}
+          <div>
+            <div className="w-full flex items-center px-3 h-10 bg-gray-800 rounded-full text-white">
+              <PhoneInput
+                country={"id"}
+                value={form.phone_number}
+                onChange={(phone) => setForm({ ...form, phone_number: phone })}
+                inputClass="!bg-transparent !outline-none !w-full !placeholder-gray-400 !h-12 !pl-11 !text-sm !text-white"
+                buttonClass="!bg-transparent !border-none !h-12 !ml-[-3px] !outline-none"
+                dropdownClass="!bg-[#282C32] !text-white !hover:bg-black !rounded-sm"
+                placeholder="Phone Number"
+              />
+            </div>
+            {errors.phone_number && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.phone_number}</p>}
           </div>
 
-          <div className="space-y-3">
-            <label className="text-[9px] font-medium text-gray-300">Segment</label>
-            <input name="segmen" value={form.segmen} onChange={handleChange} className={inputClass} placeholder="School, Residence, SOHO, etc" />
+          {/* password */}
+          <div className="relative">
+            <div className="flex items-center h-10 bg-gray-800 rounded-full px-4 text-white">
+              <Image src="/pw.svg" alt="password" width={19} height={20} className="mr-3 opacity-70" />
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password_hash"
+                placeholder="Password"
+                value={form.password_hash}
+                onChange={handleChange}
+                ref={refs.password}
+                className="bg-transparent outline-none w-full placeholder-gray-400 text-[14px]"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-5 text-gray-300 hover:text-white"
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
+            {errors.password_hash && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.password_hash}</p>}
           </div>
 
-          <div className="space-y-3">
-            <label className="text-[9px] font-medium text-gray-300">Detail Address</label>
-            <input name="detail_address" value={form.detail_address} onChange={handleChange} className={inputClass} placeholder="1st floor, 2nd floor, etc" />
+          {/* confirm password */}
+          <div className="relative">
+            <div className="flex items-center h-10 bg-gray-800 rounded-full px-4 text-white">
+              <Image src="/pw.svg" alt="confirm password" width={19} height={20} className="mr-3 opacity-70" />
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="Confirm Password"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                ref={refs.confirmPassword}
+                className="bg-transparent outline-none w-full placeholder-gray-400 text-[14px]"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-5 text-gray-300 hover:text-white"
+              >
+                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
+            {errors.confirmPassword && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.confirmPassword}</p>}
           </div>
 
           <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="mt-5 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold text-xs rounded-xl shadow-sm hover:scale-[1.01] transition duration-150"
+            type="submit"
+            className="shadow-xl bg-[#2196F3] hover:bg-[#1A78C2] text-white font-semibold rounded-full w-full h-10 text-[14px] transition-all duration-200 mt-1"
           >
-            {loading ? "Mengirim..." : "Kirim Request"}
+            Register
           </button>
-          {requestId && (
-            <button
-              onClick={handleReset}
-              className="mt-2 bg-blue-500 hover:bg-blue-600 text-white text-xs py-1 px-3 rounded-lg"
-            >
-              Buat Request Baru
-            </button>
-          )}
-        </div>
+        </form>
 
-        {/* Map & status */}
-        <div className="md:w-1/2 h-64 md:h-auto rounded-xl overflow-hidden border border-blue-500 shadow pointer-events-auto">
-          <GoogleMap
-            mapContainerClassName="w-full h-full"
-            center={marker}
-            zoom={14}
-            onClick={(e) => {
-              if (e.latLng) {
-                const lat = e.latLng.lat();
-                const lng = e.latLng.lng();
-                setMarker({ lat, lng });
-                setForm((prev) => ({ ...prev, lat, lng }));
-              }
-            }}
+        <div className="text-xs text-gray-300 mt-4">
+          Already have an account?{" "}
+          <button
+            type="button"
+            onClick={handleLoginRedirect}
+            className="text-blue-400 hover:underline"
           >
-            <Marker
-              position={marker}
-              draggable
-              onDragEnd={(e) => {
-                if (e.latLng) {
-                  const lat = e.latLng.lat();
-                  const lng = e.latLng.lng();
-                  setMarker({ lat, lng });
-                  setForm((prev) => ({ ...prev, lat, lng }));
-                }
-              }}
-            />
-          </GoogleMap>
-          <p className="text-[8px] text-gray-400 mt-1 text-center">
-            {marker.lat.toFixed(5)}, {marker.lng.toFixed(5)}
-          </p>
-
-          {requestId && (
-            <div className="text-center mt-2 space-y-1 text-[9px]">
-              <p className="text-gray-300">ID Request: {requestId}</p>
-              {status === "pending" && <p className="text-yellow-400">Menunggu persetujuan Admin ⏳</p>}
-              {status === "approved" && <p className="text-green-400 font-bold">Request Anda diterima Admin ✅</p>}
-              {status === "rejected" && <p className="text-red-400 font-bold">Request Anda ditolak Admin ❌</p>}
-            </div>
-          )}
+            Login
+          </button>
         </div>
       </div>
     </div>
