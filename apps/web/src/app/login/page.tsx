@@ -2,98 +2,180 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
-export default function Home() {
-  const router = useRouter(); 
-  
-  const handleRegisterRedirect = () => {
-    router.push("/register"); 
+type FormState = {
+  identifier: string;
+  password_hash: string;
+};
+
+export default function Login() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const router = useRouter();
+
+  const [form, setForm] = useState<FormState>({ identifier: "", password_hash: "" });
+  const [errors, setErrors] = useState<FormState>({ identifier: "", password_hash: "" });
+  const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleRegisterRedirect = () => router.push("/register");
+  const handleForgotPasswordRedirect = () => router.push("/forgot");
+
+  // validasi realtime & submit
+  const validateField = (name: string, value: string) => {
+    let error = "";
+    if (name === "identifier") {
+      if (!value) error = "username or email is required";
+    } else if (name === "password_hash") {
+      if (!value) error = "password is required";
+      else if (value.length < 8) error = "password must be at least 8 characters";
+    }
+    return error;
   };
 
-  const handleForgotPasswordRedirect = () => {
-    router.push("/forgot"); 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+
+    // validasi realtime
+    const fieldError = validateField(name, value);
+    setErrors({ ...errors, [name]: fieldError });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // validasi semua field sebelum submit
+    const newErrors: FormState = {
+      identifier: validateField("identifier", form.identifier),
+      password_hash: validateField("password_hash", form.password_hash),
+    };
+    setErrors(newErrors);
+
+    if (!Object.values(newErrors).every((err) => err === "")) return;
+
+    setLoading(true);
+
+    try {
+      const res = await fetch("http://localhost:3000/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ...form, rememberMe }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        const msg = (data.message || "").toLowerCase();
+        if (msg.includes("username") || msg.includes("identifier")) {
+          setErrors({ identifier: "we couldn't find an account with this username or email", password_hash: "" });
+        } else if (msg.includes("password")) {
+          setErrors({ identifier: "", password_hash: "the password you entered is incorrect" });
+        } else {
+          setErrors({ identifier: "", password_hash: "something went wrong, please try again later" });
+        }
+        setLoading(false);
+        return;
+      }
+
+      // redirect berdasarkan role
+      if (data.role === "admin") router.push("/admin");
+      else router.push("/dashboard");
+    } catch (err) {
+      setErrors({ identifier: "server error, please try again later", password_hash: "" });
+      setLoading(false);
+    }
   };
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center bg-cover bg-center"
+      className="h-screen w-screen flex items-center justify-center bg-cover bg-center overflow-hidden"
       style={{ backgroundImage: "url('/bg1.png')" }}
     >
-      <div className="px-10 py-8 bg-gray-800/60 rounded-2xl shadow-lg w-full max-w-[440px] flex flex-col items-center">
-        {/* Logo */}
+      <div
+        className="px-12 py-8 bg-gray-800/60 backdrop-blur-sm rounded-2xl shadow-xl
+        w-full max-w-[440px] text-sm flex flex-col items-center
+        max-h-[96vh] overflow-y-auto custom-scroll"
+      >
         <Image src="/logo.svg" alt="Logo" width={100} height={100} className="mb-2" />
-
-        {/* Heading */}
         <h1 className="text-2xl font-bold text-center text-white leading-relaxed mb-6">
           Welcome to <br /> Power Management System
         </h1>
 
-        {/* Form */}
-        <form className="flex flex-col w-full gap-4">
-          {/* Input Username */}
-          <div className="w-full h-12 flex items-center px-4 bg-[#3A3A3A]/40 rounded-full py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition duration-150">
-            <Image
-              src="/user.svg"
-              alt="user"
-              width={20}
-              height={20}
-              className="mr-3 opacity-70"
-            />
-            <input
-              type="text"
-              placeholder="Username or Email"
-              className="bg-transparent outline-none w-full placeholder-gray-400"
-            />
+        <form className="flex flex-col w-full gap-4" onSubmit={handleSubmit}>
+          {/* username/email */}
+          <div>
+            <div className="w-full flex items-center px-4 h-12 bg-gray-800 rounded-full text-white focus-within:ring-2 focus-within:ring-blue-500 transition">
+              <Image src="/user.svg" alt="user" width={17} height={19} className="mr-3 opacity-70" />
+              <input
+                type="text"
+                name="identifier"
+                placeholder="Username or Email"
+                value={form.identifier}
+                onChange={handleChange}
+                className="bg-transparent outline-none w-full placeholder-gray-400 text-[14px]"
+              />
+            </div>
+            {errors.identifier && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.identifier}</p>}
           </div>
 
-          {/* Input Password */}
-          <div className="h-12 flex items-center bg-[#3A3A3A]/40 rounded-full px-4 text-white">
-            <Image
-              src="/pw.svg"
-              alt="password"
-              width={20}
-              height={20}
-              className="mr-3 opacity-70"
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              className="bg-transparent outline-none w-full placeholder-gray-400"
-            />
+          {/* password */}
+          <div className="relative">
+            <div className="flex items-center h-12 bg-gray-800 rounded-full px-4 text-white">
+              <Image src="/pw.svg" alt="password" width={19} height={20} className="mr-3 opacity-70" />
+              <input
+                type={showPassword ? "text" : "password"} // <-- dynamically set type
+                name="password_hash"
+                placeholder="Password"
+                value={form.password_hash}
+                onChange={handleChange}
+                className="bg-transparent outline-none w-full placeholder-gray-400 text-[14px]"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)} // <-- toggle showPassword
+                className="absolute right-5 text-gray-300 hover:text-white"
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
+            {errors.password_hash && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.password_hash}</p>}
           </div>
 
-          {/* Remember Me + Forgot Password */}
-          <div className="flex items-center justify-between text-sm text-gray-300 mt-4">
+          {/* remember me & forgot password */}
+          <div className="flex items-center justify-between text-xs text-gray-300 mt-1 mb-5">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                className="w-3.5 h-3.5 rounded-3xl border-[#414141] accent-[#2196F3]"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-3 h-3 rounded-3xl border-[#414141] accent-[#2196F3]"
               />
-              Remember me
+              remember me
             </label>
-            <button
-              type="button"
-              onClick={handleForgotPasswordRedirect}
-              className="text-white hover:underline"
-            >
-              Forgot password?
+            <button type="button" onClick={handleForgotPasswordRedirect} className="text-xs text-blue-400 hover:underline">
+              forgot password?
             </button>
           </div>
 
-          {/* Button */}
+          {/* login button */}
           <button
             type="submit"
-            className="shadow-xl bg-[#2196F3] hover:bg-[#1A78C2] text-white font-semibold rounded-full w-full h-12 transition-all duration-200 mt-4"
+            disabled={loading}
+            className="shadow-xl bg-[#2196F3] hover:bg-[#1A78C2] text-white font-semibold rounded-full w-full h-12 text-[14px] transition-all duration-200 mt-1 disabled:opacity-60"
           >
-            Login
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
-        {/* Register */}
-        <div className="text-sm text-gray-300 mt-5">
-          Don't have an account?{" "}
-          <button type="button" onClick={handleRegisterRedirect} className="text-white hover:underline">
-            Register
+        <div className="text-xs text-gray-300 mt-4">
+          don't have an account?{" "}
+          <button type="button" onClick={handleRegisterRedirect} className="text-blue-400 hover:underline">
+            register
           </button>
         </div>
       </div>
