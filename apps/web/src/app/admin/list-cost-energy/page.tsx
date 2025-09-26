@@ -3,9 +3,9 @@
 import { useState, useEffect, useMemo } from "react";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { FaFileExcel, FaSearch, FaEdit, FaTrash} from "react-icons/fa";
+import { FaFileExcel, FaSearch, FaEdit, FaTrash } from "react-icons/fa";
 
-const data = Array.from({ length: 50 }, (_, i) => ({
+const initialData = Array.from({ length: 50 }, (_, i) => ({
   id: `0000${(i % 10) + 1}`,
   date: "2025-08-20",
   time: `10:19:${String(i % 10).padStart(2, "0")}`,
@@ -14,6 +14,9 @@ const data = Array.from({ length: 50 }, (_, i) => ({
   frequency: 50,
   cos: 1,
   power: 900,
+  cost: 1200 + i * 10, // dummy cost
+  validFrom: "2025-08-20 10:00:00",
+  validUntil: "2025-08-20 18:00:00",
 }));
 
 export default function DataTable() {
@@ -24,6 +27,14 @@ export default function DataTable() {
   const [filterDate, setFilterDate] = useState("");
   const [timeFrom, setTimeFrom] = useState("00:00:00");
   const [timeTo, setTimeTo] = useState("23:59:59");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [tableData, setTableData] = useState(initialData);
+
+  // form state untuk modal add
+  const [newPower, setNewPower] = useState("");
+  const [newCost, setNewCost] = useState("");
+  const [newValidFrom, setNewValidFrom] = useState("");
+  const [newValidUntil, setNewValidUntil] = useState("");
 
   // debounce search
   useEffect(() => {
@@ -38,51 +49,80 @@ export default function DataTable() {
 
   // filter data
   const filteredData = useMemo(() => {
-    return data.filter(
+    return tableData.filter(
       (d) =>
         d.id.includes(debouncedSearch) &&
         (!filterDate || d.date === filterDate) &&
         (!timeFrom || d.time >= timeFrom) &&
         (!timeTo || d.time <= timeTo)
     );
-  }, [debouncedSearch, filterDate, timeFrom, timeTo]);
+  }, [debouncedSearch, filterDate, timeFrom, timeTo, tableData]);
 
   // pagination pakai useMemo
   const paginatedData = useMemo(() => {
-    if (show === -1) return filteredData; // -1 untuk "All"
+    if (show === -1) return filteredData;
     return filteredData.slice((currentPage - 1) * show, currentPage * show);
   }, [filteredData, show, currentPage]);
 
   const totalPages = show === -1 ? 1 : Math.ceil(filteredData.length / show);
 
-    const exportXLS = async () => {
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet("List Cost Energy");
-  
-      worksheet.columns = [
-        { header: "Serial Number", key: "id", width: 12 },
-        { header: "Owner", key: "date", width: 15 },
-        { header: "Wattage/Phase", key: "time", width: 12 },
-        { header: "Address Name", key: "energy", width: 20 },
-        { header: "Segment", key: "cost", width: 20 },
-        { header: "Active", key: "frequency", width: 20 },
-      ];
-  
-      filteredData.forEach((item) => worksheet.addRow(item));
-  
-      worksheet.getRow(1).eachCell((cell) => {
-        cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E2A4A" } };
-        cell.alignment = { vertical: "middle", horizontal: "center" };
-      });
-  
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-  
-      saveAs(blob, "List_Cost_Energy.xlsx");
+  const exportXLS = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("List Cost Energy");
+
+    worksheet.columns = [
+      { header: "Wattage/Phase", key: "power", width: 15 },
+      { header: "Cost (Rupiah)", key: "cost", width: 15 },
+      { header: "valid from", key: "validFrom", width: 20 },
+      { header: "valid until", key: "validUntil", width: 20 },
+    ];
+
+    filteredData.forEach((item) => worksheet.addRow(item));
+
+    worksheet.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF1E2A4A" },
+      };
+      cell.alignment = { vertical: "middle", horizontal: "center" };
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    saveAs(blob, "List_Cost_Energy.xlsx");
+  };
+
+  const handleAddNewData = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const newEntry = {
+      id: `NEW${tableData.length + 1}`,
+      date: new Date().toISOString().split("T")[0],
+      time: new Date().toLocaleTimeString("en-GB"),
+      voltage: 220,
+      current: 0,
+      frequency: 50,
+      cos: 1,
+      power: Number(newPower),
+      cost: Number(newCost),
+      validFrom: newValidFrom,
+      validUntil: newValidUntil,
     };
+
+    setTableData([newEntry, ...tableData]);
+    setShowAddModal(false);
+
+    // reset form
+    setNewPower("");
+    setNewCost("");
+    setNewValidFrom("");
+    setNewValidUntil("");
+  };
 
   return (
     <div
@@ -94,21 +134,23 @@ export default function DataTable() {
     >
       {/* Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2">
-        {/* Judul */}
         <h1 className="text-xl md:text-2xl font-bold text-white">
           List Cost Energy
         </h1>
         <div className="flex flex-row gap-2">
-        <button className="bg-green-600 hover:bg-green-700 rounded-full">
-            +
-        </button>
-        <button
-          onClick={exportXLS}
-          className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-full text-white text-xs transition"
-        >
-          <FaFileExcel className="text-white text-sm" />
-          Export XLS
-        </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-full text-white text-xs transition"
+          >
+            + Update Data
+          </button>
+          <button
+            onClick={exportXLS}
+            className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-full text-white text-xs transition"
+          >
+            <FaFileExcel className="text-white text-sm" />
+            Export XLS
+          </button>
         </div>
       </div>
 
@@ -131,12 +173,12 @@ export default function DataTable() {
 
         {/* Device ID */}
         <div className="flex flex-col">
-          <label className="mb-1 font-semibold">Serial Number</label>
+          <label className="mb-1 font-semibold">Wattage/Phase</label>
           <div className="relative">
             <FaSearch className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-300 text-xs" />
             <input
               type="text"
-              placeholder="Search Serial Number"
+              placeholder="Search Wattage/Phase"
               className="p-2 pl-8 rounded-lg bg-[#123060] text-white w-full text-xs"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -204,7 +246,7 @@ export default function DataTable() {
           <tbody>
             {paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-3">
+                <td colSpan={4} className="text-center py-3">
                   No data found
                 </td>
               </tr>
@@ -216,10 +258,10 @@ export default function DataTable() {
                     index % 2 === 0 ? "bg-[#0C1F3C]" : "bg-[#1C345C]"
                   } hover:bg-blue-800`}
                 >
-                  <td className="px-2 py-1">{row.id}</td>
-                  <td className="px-2 py-1">{row.date}</td>
-                  <td className="px-2 py-1">{row.time}</td>
-                  <td className="px-2 py-1">{row.time}</td>
+                  <td className="px-2 py-1">{row.power}</td>
+                  <td className="px-2 py-1">{row.cost}</td>
+                  <td className="px-2 py-1">{row.validFrom}</td>
+                  <td className="px-2 py-1">{row.validUntil}</td>
                 </tr>
               ))
             )}
@@ -269,6 +311,55 @@ export default function DataTable() {
           >
             Next
           </button>
+        </div>
+      )}
+
+      {/* Modal Add New Data */}
+      {showAddModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black z-50">
+          <div className="bg-white rounded-xl p-6 w-96 text-black">
+            <h2 className="text-lg font-bold mb-4">Add New Data</h2>
+            <form className="flex flex-col gap-3" onSubmit={handleAddNewData}>
+              <input
+                type="number"
+                placeholder="Wattage/Phase"
+                className="p-2 border rounded"
+                value={newPower}
+                onChange={(e) => setNewPower(e.target.value)}
+                required
+              />
+              <input
+                type="number"
+                placeholder="Cost (Rupiah)"
+                className="p-2 border rounded"
+                value={newCost}
+                onChange={(e) => setNewCost(e.target.value)}
+                required
+              />
+              <input
+                type="datetime-local"
+                className="p-2 border rounded"
+                value={newValidFrom}
+                onChange={(e) => setNewValidFrom(e.target.value)}
+                required
+              />
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-1 bg-gray-500 text-white rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1 bg-green-600 text-white rounded"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

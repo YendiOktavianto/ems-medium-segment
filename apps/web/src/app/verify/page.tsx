@@ -1,19 +1,49 @@
 /* eslint-disable react/no-unescaped-entities */
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useState, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 
 export default function Verify() {
-  const router = useRouter(); 
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const email = searchParams.get("email") || "example@gmail.com";
+
+  // pastikan typescript mengenal email sebagai string
+  const email: string = searchParams?.get("email") || "example@gmail.com";
 
   const [code, setCode] = useState(["", "", "", ""]);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // message + type
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<"success" | "error" | "">("");
+  const [timer, setTimer] = useState(0);
+
+  // Countdown timer untuk resend
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timer]);
+
+  // otomatis hilangkan pesan sukses/error setelah 5 detik
+  useEffect(() => {
+    if (!messageType) return;
+
+    const timeout = setTimeout(() => {
+      setMessage("");
+      setMessageType("");
+    }, 5000);
+
+    return () => clearTimeout(timeout);
+  }, [messageType]);
+
+  // handle input kode OTP
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const val = e.target.value;
     if (/^[0-9]?$/.test(val)) {
@@ -32,34 +62,66 @@ export default function Verify() {
     }
   };
 
+  // Submit kode OTP
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const finalCode = code.join("");
-    console.log("Kode verifikasi:", finalCode, "untuk email:", email);
-    // TODO: submit ke backend
+
+    // Validasi kosong
+    if (finalCode.length < 4) {
+      setMessageType("error");
+      setMessage("Please enter the complete 4-digit code");
+      return;
+    }
+
+    // TODO: cek ke backend
+    const isValid = finalCode === "1234"; // dummy
+    if (!isValid) {
+      setMessageType("error");
+      setMessage("Invalid verification code");
+      return;
+    }
+
+    // jika valid
+    setMessageType("success");
+    setMessage("Verification successful! Redirecting...");
+    setTimeout(() => {
+      router.push("/resetpassword");
+    }, 1500);
   };
 
+  // Resend kode OTP
   const handleResend = () => {
-    alert(`Verification code resent to ${email}`);
-    // TODO: panggil API resend
+    // TODO: panggil API resend ke backend
+    setMessageType("success");
+    setMessage(`Verification code has been resent to ${email}`);
+    setTimer(60); // mulai countdown 60 detik
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-cover bg-center" style={{ backgroundImage: "url('/bg1.png')" }}>
+    <div
+      className="min-h-screen flex items-center justify-center bg-cover bg-center"
+      style={{ backgroundImage: "url('/bg1.png')" }}
+    >
       <div className="px-10 py-10 bg-gray-800/60 rounded-2xl shadow-lg w-full max-w-[440px] flex flex-col items-center">
+        {/* Tombol back */}
         <button onClick={() => router.back()} className="self-start mb-1">
           <Image src="/back.svg" alt="Back" width={30} height={30} />
         </button>
-        <Image src="/mail.svg" alt="Logo" width={90} height={90} className="mb-5" />
 
+        {/* Icon mail */}
+        <Image src="/mail.svg" alt="Logo" width={100} height={100} className="mb-5" />
+
+        {/* Judul */}
         <h1 className="text-2xl font-bold text-center text-white leading-relaxed mb-3">
           Verify Your Mail
         </h1>
-        <p className="font-light text-center text-white mb-8">
+        <p className="font-light text-center text-white mb-6">
           Please enter the 4 digit code sent to <span className="block font-medium">{email}</span>
         </p>
 
-        <form className="flex flex-col items-center gap-6 w-full" onSubmit={handleSubmit}>
+        {/* Form */}
+        <form className="flex flex-col items-center gap-4 w-full" onSubmit={handleSubmit}>
           <div className="flex justify-center gap-4 w-full">
             {code.map((num, idx) => (
               <input
@@ -68,25 +130,51 @@ export default function Verify() {
                 maxLength={1}
                 value={num}
                 autoFocus={idx === 0}
-                ref={(el) => { inputRefs.current[idx] = el; }}
+                ref={(el) => {
+                  inputRefs.current[idx] = el;
+                }}
                 onChange={(e) => handleChange(e, idx)}
                 onKeyDown={(e) => handleKeyDown(e, idx)}
-                className="w-12 h-12 text-center text-white bg-[#3A3A3A]/40 rounded-lg outline-none focus:ring-2 focus:ring-[#2196F3] transition-all"
+                className="w-12 h-12 text-center text-white bg-gray-800/60 rounded-lg outline-none focus:ring-2 focus:ring-[#2196F3] transition-all"
                 inputMode="numeric"
                 pattern="[0-9]*"
               />
             ))}
           </div>
 
-          <button type="submit" className="shadow-xl bg-[#2196F3] hover:bg-[#1A78C2] text-white font-semibold rounded-full w-full h-12 transition-all duration-200">
+          {/* Error kecil tepat di bawah input */}
+          {messageType === "error" && (
+            <p className="text-red-400 text-sm">{message}</p>
+          )}
+
+          {/* Tombol Verify */}
+          <button
+            type="submit"
+            className="shadow-xl bg-[#2196F3] hover:bg-[#1A78C2] text-white font-semibold rounded-full w-full h-12 transition-all duration-200"
+          >
             Verify
           </button>
+
+          {/* Alert hijau profesional */}
+          {messageType === "success" && (
+            <div className="w-full text-center text-sm text-green-400 bg-green-900/30 py-2 px-3 rounded-lg">
+              {message}
+            </div>
+          )}
         </form>
 
+        {/* Resend */}
         <p className="mt-6 text-white text-sm">
           Didn't receive the code?{" "}
-          <span onClick={handleResend} className="text-[#2196F3] cursor-pointer select-none">
-            Resend
+          <span
+            onClick={timer === 0 ? handleResend : undefined}
+            className={`${
+              timer === 0
+                ? "text-[#2196F3] cursor-pointer"
+                : "text-gray-400 cursor-not-allowed"
+            } select-none`}
+          >
+            {timer > 0 ? `Resend in ${timer}s` : "Resend"}
           </span>
         </p>
       </div>

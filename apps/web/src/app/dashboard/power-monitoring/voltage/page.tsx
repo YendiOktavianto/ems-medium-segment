@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -183,7 +183,7 @@ export default function Dashboard() {
       {/* VOLTAGE GAUGE + LINE CHART */}
       <div className="flex flex-col md:flex-row gap-6">
         {/* GAUGE */}
-        <div className="flex flex-col items-center w-full md:w-1/2 bg-[#001B3A] rounded-2xl p-6">
+        <div className="flex flex-col items-center w-full md:w-1/2 bg-[#032d7a] rounded-2xl p-6">
           <svg viewBox="0 0 200 200" className="w-56 h-56">
             <path d={describeArc(100, 100, 80, startAngle, endAngle)} stroke="red" strokeWidth="7" fill="none" />
             <path d={describeArc(100, 100, 80, 310, 30)} stroke="yellow" strokeWidth="7" fill="none" />
@@ -225,17 +225,32 @@ export default function Dashboard() {
           <div className="bg-gray-200 text-black px-3 py-1 rounded mt-2 font-bold">{voltage} V</div>
         </div>
 
-        {/* LINE CHART */}
-        <div className="w-full bg-[#0C1F3C] rounded-xl p-4">
+        {/* AREA CHART */}
+        <div className="w-full bg-[#032d7a] rounded-xl p-4">
           <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-              <CartesianGrid stroke="#333" strokeDasharray="3 3" />
+            <AreaChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+              <CartesianGrid stroke="#444" strokeDasharray="3 3" />
               <XAxis dataKey="time" tick={{ fill: "#fff", fontSize: 10 }} />
               <YAxis domain={[0, 300]} ticks={[0, 60, 120, 180, 240, 300]} tick={{ fill: "#fff", fontSize: 10 }} label={{ value: "Voltage", angle: -90, position: "insideLeft", fill: "#fff", dy:20 }} />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip
+                contentStyle={{
+                backgroundColor: '#0C1F3C',
+                borderRadius: '8px',
+                border: '1px solid #333',
+                color: '#fff',
+              }}/>  
               <Legend />
-              <Line type="monotone" dataKey="voltage" stroke="#1E90FF" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} name="Voltage (Volt)" />
-            </LineChart>
+              <Area 
+                type="monotone" 
+                dataKey="voltage" 
+                stroke="#9bff5b"
+                fill="rgba(155,255,91,0.4)"
+                strokeWidth={2} 
+                dot={{ r: 3 }} 
+                isAnimationActive={false} 
+                name="Voltage (Volt)" 
+              />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>

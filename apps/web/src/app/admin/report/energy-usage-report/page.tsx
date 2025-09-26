@@ -6,16 +6,16 @@ import { saveAs } from "file-saver";
 import { FaFileExcel, FaSearch } from "react-icons/fa";
 
 const data = [
-  { id: "000001", date: "2025-08-20", time: "23:59:59", energy: 1220, cost: 25000, frequency: 250000 },
-  { id: "000002", date: "2025-08-21", time: "23:59:59", energy: 1230, cost: 25000, frequency: 275000 },
-  { id: "000003", date: "2025-08-22", time: "23:59:59", energy: 1240, cost: 25000, frequency: 300000 },
-  { id: "000004", date: "2025-08-23", time: "23:59:59", energy: 1250, cost: 25000, frequency: 325000 },
-  { id: "000005", date: "2025-08-24", time: "23:59:59", energy: 1260, cost: 25000, frequency: 350000 },
-  { id: "000006", date: "2025-08-25", time: "23:59:59", energy: 1270, cost: 25000, frequency: 375000 },
-  { id: "000007", date: "2025-08-26", time: "23:59:59", energy: 1280, cost: 25000, frequency: 400000 },
-  { id: "000008", date: "2025-08-27", time: "23:59:59", energy: 1290, cost: 25000, frequency: 425000 },
-  { id: "000009", date: "2025-08-28", time: "23:59:59", energy: 1300, cost: 25000, frequency: 450000 },
-  { id: "000010", date: "2025-08-29", time: "23:59:59", energy: 1310, cost: 25000, frequency: 475000 },
+  { id: "000001", date: "2025-08-20", time: "23:59:59", energy: 1220, cost: 25000, mtd_usage_cost: 250000 },
+  { id: "000002", date: "2025-08-21", time: "23:59:59", energy: 1230, cost: 25000, mtd_usage_cost: 275000 },
+  { id: "000003", date: "2025-08-22", time: "23:59:59", energy: 1240, cost: 25000, mtd_usage_cost: 300000 },
+  { id: "000004", date: "2025-08-23", time: "23:59:59", energy: 1250, cost: 25000, mtd_usage_cost: 325000 },
+  { id: "000005", date: "2025-08-24", time: "23:59:59", energy: 1260, cost: 25000, mtd_usage_cost: 350000 },
+  { id: "000006", date: "2025-08-25", time: "23:59:59", energy: 1270, cost: 25000, mtd_usage_cost: 375000 },
+  { id: "000007", date: "2025-08-26", time: "23:59:59", energy: 1280, cost: 25000, mtd_usage_cost: 400000 },
+  { id: "000008", date: "2025-08-27", time: "23:59:59", energy: 1290, cost: 25000, mtd_usage_cost: 425000 },
+  { id: "000009", date: "2025-08-28", time: "23:59:59", energy: 1300, cost: 25000, mtd_usage_cost: 450000 },
+  { id: "000010", date: "2025-08-29", time: "23:59:59", energy: 1310, cost: 25000, mtd_usage_cost: 475000 },
 ];
 
 export default function DataTable() {
@@ -57,7 +57,7 @@ export default function DataTable() {
       { header: "Time", key: "time", width: 12 },
       { header: "Energy Usage (kWh)", key: "energy", width: 20 },
       { header: "Usage Cost (IDR)", key: "cost", width: 20 },
-      { header: "Frequency (Hz)", key: "frequency", width: 20 },
+      { header: "MTD Usage Cost (IDR)", key: "mtd_usage_cost", width: 20 },
     ];
 
     filteredData.forEach((item) => worksheet.addRow(item));
@@ -164,7 +164,7 @@ export default function DataTable() {
                 "Time",
                 "Energy Usage (kWh)",
                 "Usage Cost (IDR)",
-                "Frequency (Hz)",
+                "MTD Usage Cost (IDR)",
               ].map((h) => (
                 <th
                   key={h}
@@ -201,7 +201,7 @@ export default function DataTable() {
                     {row.cost.toLocaleString("id-ID")}
                   </td>
                   <td className="px-2 py-1">
-                    {row.frequency.toLocaleString("id-ID")}
+                    {row.mtd_usage_cost.toLocaleString("id-ID")}
                   </td>
                 </tr>
               ))

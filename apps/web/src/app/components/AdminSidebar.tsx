@@ -31,12 +31,10 @@ export default function Sidebar({ selectedPage, setSelectedPage, setShowLogoutOv
         {/* main menu */}
         {[
           { key: "Dashboard", label: "Dashboard", icon: "/home.svg", path: "/admin" },
+          { key: "Site Monitoring", label: "Site Monitoring", icon: "/site-monitoring.svg", path: "/admin/site-monitoring" },
           { key: "User Management", label: "User Management", icon: "/user-info.svg", path: "/admin/user-management" },
           { key: "Device Management", label: "Device Management", icon: "/general-info.svg", path: "/admin/device-management" },
-          { key: "Site Monitoring", label: "Site Monitoring", icon: "/site-monitoring.svg", path: "/admin/site-monitoring" },
           { key: "Device Request", label: "Device Request", icon: "/general-info.svg", path: "/admin/device-request" },
-          { key: "Settings", label: "Settings", icon: "/general-info.svg", path: "/admin/settings" },
-          { key: "Power Monitoring", label: "Power Monitoring", icon: "/general-info.svg", path: "/admin/power-monitoring" },
           { key: "List Cost Energy", label: "List Cost Energy", icon: "/general-info.svg", path: "/admin/list-cost-energy" },
         ].map((item) => (
           <a
