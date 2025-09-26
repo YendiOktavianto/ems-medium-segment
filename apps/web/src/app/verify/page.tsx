@@ -164,7 +164,7 @@ export default function Verify() {
         </form>
 
         {/* Resend */}
-        <p className="mt-6 text-white text-sm">
+        <p className="text-xs text-gray-300 mt-4">
           Didn't receive the code?{" "}
           <span
             onClick={timer === 0 ? handleResend : undefined}

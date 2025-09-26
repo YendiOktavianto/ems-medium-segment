@@ -246,7 +246,7 @@ export default function DataTable(): React.JSX.Element {
                     {row.wattage} / {row.phase}
                   </td>
                   <td className="px-2 py-1">
-                    {row.address_name} - {row.detail_address_name}
+                    {row.address_name} | {row.detail_address_name}
                   </td>
                   <td className="px-2 py-1">{row.lat}</td>
                   <td className="px-2 py-1">{row.long}</td>

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 type FormState = {
   identifier: string;
@@ -10,6 +11,9 @@ type FormState = {
 };
 
 export default function Login() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const router = useRouter();
 
   const [form, setForm] = useState<FormState>({ identifier: "", password_hash: "" });
@@ -120,17 +124,24 @@ export default function Login() {
           </div>
 
           {/* password */}
-          <div>
-            <div className="w-full flex items-center px-4 h-12 bg-gray-800 rounded-full text-white focus-within:ring-2 focus-within:ring-blue-500 transition">
+          <div className="relative">
+            <div className="flex items-center h-12 bg-gray-800 rounded-full px-4 text-white">
               <Image src="/pw.svg" alt="password" width={19} height={20} className="mr-3 opacity-70" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"} // <-- dynamically set type
                 name="password_hash"
                 placeholder="Password"
                 value={form.password_hash}
                 onChange={handleChange}
                 className="bg-transparent outline-none w-full placeholder-gray-400 text-[14px]"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)} // <-- toggle showPassword
+                className="absolute right-5 text-gray-300 hover:text-white"
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
             </div>
             {errors.password_hash && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.password_hash}</p>}
           </div>

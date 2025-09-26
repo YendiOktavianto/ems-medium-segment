@@ -9,8 +9,8 @@ import PhoneInput from "react-phone-input-2";
 type FormState = {
   email: string;
   username: string;
-  phone: string;
-  password: string;
+  phone_number: string;
+  password_hash: string;
   confirmPassword: string;
 };
 
@@ -20,20 +20,22 @@ export default function Register() {
   const [form, setForm] = useState<FormState>({
     email: "",
     username: "",
-    phone: "",
-    password: "",
+    phone_number: "",
+    password_hash: "",
     confirmPassword: "",
   });
 
   const [errors, setErrors] = useState<FormState>({
     email: "",
     username: "",
-    phone: "",
-    password: "",
+    phone_number: "",
+    password_hash: "",
     confirmPassword: "",
   });
 
+  // separate state for each password input
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const refs = {
     email: useRef<HTMLInputElement | null>(null),
@@ -51,8 +53,8 @@ export default function Register() {
     let newErrors: FormState = {
       email: "",
       username: "",
-      phone: "",
-      password: "",
+      phone_number: "",
+      password_hash: "",
       confirmPassword: "",
     };
 
@@ -64,24 +66,24 @@ export default function Register() {
     else if (form.username.length < 3)
       newErrors.username = "username must be at least 3 characters";
 
-    const numericPhone = form.phone.replace(/\D/g, "");
-    if (!form.phone) newErrors.phone = "phone number is required";
-    else if (numericPhone.length < 9) newErrors.phone = "phone number is too short";
-    else if (numericPhone.length > 15) newErrors.phone = "phone number is too long";
+    const numericPhone = form.phone_number.replace(/\D/g, "");
+    if (!form.phone_number) newErrors.phone_number = "phone number is required";
+    else if (form.phone_number.length < 9) newErrors.phone_number = "phone number is too short";
+    else if (form.phone_number.length > 15) newErrors.phone_number = "phone number is too long";
 
-    if (!form.password) newErrors.password = "password is required";
-    else if (form.password.length < 8)
-      newErrors.password = "password must be at least 8 characters";
+    if (!form.password_hash) newErrors.password_hash = "password is required";
+    else if (form.password_hash.length < 8)
+      newErrors.password_hash = "password must be at least 8 characters";
     else if (
-      !/(?=.*[A-Za-z])/.test(form.password) ||
-      !/(?=.*\d)/.test(form.password) ||
-      !/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/g.test(form.password)
+      !/(?=.*[A-Za-z])/.test(form.password_hash) ||
+      !/(?=.*\d)/.test(form.password_hash) ||
+      !/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/g.test(form.password_hash)
     )
-      newErrors.password =
+      newErrors.password_hash =
         "password must include letters, numbers, and special characters";
 
     if (!form.confirmPassword) newErrors.confirmPassword = "confirm password is required";
-    else if (form.confirmPassword !== form.password)
+    else if (form.confirmPassword !== form.password_hash)
       newErrors.confirmPassword = "confirm password does not match";
 
     return newErrors;
@@ -108,10 +110,9 @@ export default function Register() {
           } else if (data.message?.toLowerCase().includes("email")) {
             setErrors({ ...errors, email: data.message });
           } else {
-            setErrors({ ...errors, password: "registration failed, please try again" });
+            setErrors({ ...errors, password_hash: "registration failed, please try again" });
           }
         } else {
-          // redirect ke login setelah sukses
           router.push("/login");
         }
       } catch {
@@ -149,7 +150,7 @@ export default function Register() {
         <form className="flex flex-col w-full gap-4" onSubmit={handleSubmit}>
           {/* email */}
           <div>
-            <div className="w-full flex items-center px-4 h-12 bg-gray-800 rounded-full text-white">
+            <div className="w-full flex items-center px-4 h-10 bg-gray-800 rounded-full text-white">
               <Image src="/email.svg" alt="email" width={17} height={19} className="mr-3 opacity-70" />
               <input
                 type="text"
@@ -166,7 +167,7 @@ export default function Register() {
 
           {/* username */}
           <div>
-            <div className="w-full flex items-center px-4 h-12 bg-gray-800 rounded-full text-white">
+            <div className="w-full flex items-center px-4 h-10 bg-gray-800 rounded-full text-white">
               <Image src="/user.svg" alt="user" width={17} height={19} className="mr-3 opacity-70" />
               <input
                 type="text"
@@ -183,29 +184,29 @@ export default function Register() {
 
           {/* phone */}
           <div>
-            <div className="w-full flex items-center px-3 h-12 bg-gray-800 rounded-full text-white">
+            <div className="w-full flex items-center px-3 h-10 bg-gray-800 rounded-full text-white">
               <PhoneInput
                 country={"id"}
-                value={form.phone}
-                onChange={(phone) => setForm({ ...form, phone })}
+                value={form.phone_number}
+                onChange={(phone) => setForm({ ...form, phone_number: phone })}
                 inputClass="!bg-transparent !outline-none !w-full !placeholder-gray-400 !h-12 !pl-11 !text-sm !text-white"
                 buttonClass="!bg-transparent !border-none !h-12 !ml-[-3px] !outline-none"
                 dropdownClass="!bg-[#282C32] !text-white !hover:bg-black !rounded-sm"
                 placeholder="Phone Number"
               />
             </div>
-            {errors.phone && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.phone}</p>}
+            {errors.phone_number && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.phone_number}</p>}
           </div>
 
           {/* password */}
           <div className="relative">
-            <div className="flex items-center h-12 bg-gray-800 rounded-full px-4 text-white">
+            <div className="flex items-center h-10 bg-gray-800 rounded-full px-4 text-white">
               <Image src="/pw.svg" alt="password" width={19} height={20} className="mr-3 opacity-70" />
               <input
                 type={showPassword ? "text" : "password"}
-                name="password"
+                name="password_hash"
                 placeholder="Password"
-                value={form.password}
+                value={form.password_hash}
                 onChange={handleChange}
                 ref={refs.password}
                 className="bg-transparent outline-none w-full placeholder-gray-400 text-[14px]"
@@ -218,15 +219,15 @@ export default function Register() {
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
-            {errors.password && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.password}</p>}
+            {errors.password_hash && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.password_hash}</p>}
           </div>
 
           {/* confirm password */}
           <div className="relative">
-            <div className="flex items-center h-12 bg-gray-800 rounded-full px-4 text-white">
+            <div className="flex items-center h-10 bg-gray-800 rounded-full px-4 text-white">
               <Image src="/pw.svg" alt="confirm password" width={19} height={20} className="mr-3 opacity-70" />
               <input
-                type={showPassword ? "text" : "password"}
+                type={showConfirmPassword ? "text" : "password"}
                 name="confirmPassword"
                 placeholder="Confirm Password"
                 value={form.confirmPassword}
@@ -236,10 +237,10 @@ export default function Register() {
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute right-5 text-gray-300 hover:text-white"
               >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
             {errors.confirmPassword && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.confirmPassword}</p>}
@@ -247,7 +248,7 @@ export default function Register() {
 
           <button
             type="submit"
-            className="shadow-xl bg-[#2196F3] hover:bg-[#1A78C2] text-white font-semibold rounded-full w-full h-12 text-[14px] transition-all duration-200 mt-1"
+            className="shadow-xl bg-[#2196F3] hover:bg-[#1A78C2] text-white font-semibold rounded-full w-full h-10 text-[14px] transition-all duration-200 mt-1"
           >
             Register
           </button>
