@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-expressions */
 "use client";
 
 import Image from "next/image";
@@ -51,7 +50,7 @@ export default function Register() {
   };
 
   const validateForm = (form: FormState) => {
-    let newErrors: FormState = {
+    const newErrors: FormState = {
       email: "",
       username: "",
       phone_number: "",
@@ -64,24 +63,36 @@ export default function Register() {
       newErrors.email = "please enter a valid email address";
 
     if (!form.username) newErrors.username = "username is required";
-    else if (form.username.length < 3)
-      newErrors.username = "username must be at least 3 characters";
+    else if (form.username.length < 8)
+      newErrors.username = "username must be at least 8 characters";
+    else if (/\s/.test(form.username))
+      newErrors.username = "username cannot contain spaces";
+    else if (form.username.length > 30)
+      newErrors.username = "username must be at most 30 characters";
+    else if (!/^[A-Z]/.test(form.password_hash))
+      newErrors.password_hash = "password must start with an uppercase letter";
 
-    const numericPhone = form.phone_number.replace(/\D/g, "");
     if (!form.phone_number) newErrors.phone_number = "phone number is required";
-    else if (form.phone_number.length < 9) newErrors.phone_number = "phone number is too short";
-    else if (form.phone_number.length > 15) newErrors.phone_number = "phone number is too long";
+    else if (form.phone_number.length < 10)
+      newErrors.phone_number = "phone number is too short";
+    else if (form.phone_number.length > 15)
+      newErrors.phone_number = "phone number is too long";
 
-    if (!form.password_hash) newErrors.password_hash = "password is required";
-    else if (form.password_hash.length < 8)
+    if (!form.password_hash) {
+      newErrors.password_hash = "password is required";
+    } else if (form.password_hash.length < 8) {
       newErrors.password_hash = "password must be at least 8 characters";
-    else if (
-      !/(?=.*[A-Za-z])/.test(form.password_hash) ||
-      !/(?=.*\d)/.test(form.password_hash) ||
-      !/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/g.test(form.password_hash)
-    )
-      newErrors.password_hash =
-        "password must include letters, numbers, and special characters";
+    } else if (form.password_hash.length > 20) {
+      newErrors.password_hash = "password must be at most 20 characters";
+    } else if (!/[A-Z]/.test(form.password_hash)) {
+      newErrors.password_hash = "password must include at least one uppercase letter";
+    } else if (!/[a-z]/.test(form.password_hash)) {
+      newErrors.password_hash = "password must include at least one lowercase letter";
+    } else if (!/\d/.test(form.password_hash)) {
+      newErrors.password_hash = "password must include at least one number";
+    } else if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(form.password_hash)) {
+      newErrors.password_hash = "password must include at least one special character";
+    }
 
     if (!form.confirmPassword) newErrors.confirmPassword = "confirm password is required";
     else if (form.confirmPassword !== form.password_hash)
@@ -100,7 +111,7 @@ export default function Register() {
         const res = await fetch("http://localhost:3000/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: JSON.stringify(form), // form sudah ada +62
         });
 
         const data = await res.json();
@@ -189,7 +200,12 @@ export default function Register() {
               <PhoneInput
                 country={"id"}
                 value={form.phone_number}
-                onChange={(phone) => setForm({ ...form, phone_number: phone })}
+                onChange={(phone) =>
+                  setForm({
+                    ...form,
+                    phone_number: phone.startsWith("+") ? phone : "+" + phone,
+                  })
+                }
                 inputClass="!bg-transparent !outline-none !w-full !placeholder-gray-400 !h-12 !pl-11 !text-sm !text-white"
                 buttonClass="!bg-transparent !border-none !h-12 !ml-[-3px] !outline-none"
                 dropdownClass="!bg-[#282C32] !text-white !hover:bg-black !rounded-sm"
