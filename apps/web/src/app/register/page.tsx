@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-expressions */
 "use client";
 
 import Image from "next/image";
@@ -11,7 +10,7 @@ type FormState = {
   email: string;
   username: string;
   phone_number: string;
-  password_hash: string;
+  password: string;
   confirmPassword: string;
 };
 
@@ -22,7 +21,7 @@ export default function Register() {
     email: "",
     username: "",
     phone_number: "",
-    password_hash: "",
+    password: "",
     confirmPassword: "",
   });
 
@@ -30,7 +29,7 @@ export default function Register() {
     email: "",
     username: "",
     phone_number: "",
-    password_hash: "",
+    password: "",
     confirmPassword: "",
   });
 
@@ -51,11 +50,11 @@ export default function Register() {
   };
 
   const validateForm = (form: FormState) => {
-    let newErrors: FormState = {
+    const newErrors: FormState = {
       email: "",
       username: "",
       phone_number: "",
-      password_hash: "",
+      password: "",
       confirmPassword: "",
     };
 
@@ -70,8 +69,8 @@ export default function Register() {
       newErrors.username = "username cannot contain spaces";
     else if (form.username.length > 30)
       newErrors.username = "username must be at most 30 characters";
-    else if (!/^[A-Z]/.test(form.password_hash))
-      newErrors.password_hash = "password must start with an uppercase letter";
+    else if (!/^[A-Z]/.test(form.password))
+      newErrors.password = "password must start with an uppercase letter";
 
     if (!form.phone_number) newErrors.phone_number = "phone number is required";
     else if (form.phone_number.length < 10)
@@ -79,24 +78,24 @@ export default function Register() {
     else if (form.phone_number.length > 15)
       newErrors.phone_number = "phone number is too long";
 
-    if (!form.password_hash) {
-      newErrors.password_hash = "password is required";
-    } else if (form.password_hash.length < 8) {
-      newErrors.password_hash = "password must be at least 8 characters";
-    } else if (form.password_hash.length > 20) {
-      newErrors.password_hash = "password must be at most 20 characters";
-    } else if (!/[A-Z]/.test(form.password_hash)) {
-      newErrors.password_hash = "password must include at least one uppercase letter";
-    } else if (!/[a-z]/.test(form.password_hash)) {
-      newErrors.password_hash = "password must include at least one lowercase letter";
-    } else if (!/\d/.test(form.password_hash)) {
-      newErrors.password_hash = "password must include at least one number";
-    } else if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(form.password_hash)) {
-      newErrors.password_hash = "password must include at least one special character";
+    if (!form.password) {
+      newErrors.password = "password is required";
+    } else if (form.password.length < 8) {
+      newErrors.password = "password must be at least 8 characters";
+    } else if (form.password.length > 20) {
+      newErrors.password = "password must be at most 20 characters";
+    } else if (!/[A-Z]/.test(form.password)) {
+      newErrors.password = "password must include at least one uppercase letter";
+    } else if (!/[a-z]/.test(form.password)) {
+      newErrors.password = "password must include at least one lowercase letter";
+    } else if (!/\d/.test(form.password)) {
+      newErrors.password = "password must include at least one number";
+    } else if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(form.password)) {
+      newErrors.password = "password must include at least one special character";
     }
 
     if (!form.confirmPassword) newErrors.confirmPassword = "confirm password is required";
-    else if (form.confirmPassword !== form.password_hash)
+    else if (form.confirmPassword !== form.password)
       newErrors.confirmPassword = "confirm password does not match";
 
     return newErrors;
@@ -109,21 +108,24 @@ export default function Register() {
 
     if (Object.values(newErrors).every((err) => err === "")) {
       try {
-        const res = await fetch("http://localhost:3000/auth/register", {
+        const { email, username, phone_number, password } = form;
+        const payload = { email, username, phone_number, password };
+        const res = await fetch("http://localhost:4000/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form), // form sudah ada +62
+          body: JSON.stringify(payload), // form sudah ada +62
         });
 
         const data = await res.json();
 
         if (!res.ok) {
+          console.error("Register failed:", res.status, data);
           if (data.message?.toLowerCase().includes("username")) {
             setErrors({ ...errors, username: data.message });
           } else if (data.message?.toLowerCase().includes("email")) {
             setErrors({ ...errors, email: data.message });
           } else {
-            setErrors({ ...errors, password_hash: "registration failed, please try again" });
+            setErrors({ ...errors, password: "registration failed, please try again" });
           }
         } else {
           router.push("/login");
@@ -222,9 +224,9 @@ export default function Register() {
               <Image src="/pw.svg" alt="password" width={19} height={20} className="mr-3 opacity-70" />
               <input
                 type={showPassword ? "text" : "password"}
-                name="password_hash"
+                name="password"
                 placeholder="Password"
-                value={form.password_hash}
+                value={form.password}
                 onChange={handleChange}
                 ref={refs.password}
                 className="bg-transparent outline-none w-full placeholder-gray-400 text-[14px]"
@@ -237,7 +239,7 @@ export default function Register() {
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
-            {errors.password_hash && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.password_hash}</p>}
+            {errors.password && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.password}</p>}
           </div>
 
           {/* confirm password */}

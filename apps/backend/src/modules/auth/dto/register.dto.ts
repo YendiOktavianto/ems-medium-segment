@@ -22,8 +22,4 @@ export class RegisterDto {
   @IsDefined()
   @IsStrongPassword()
   password: string;
-
-  @IsDefined()
-  @IsStrongPassword()
-  confirm_password: string;
 }
