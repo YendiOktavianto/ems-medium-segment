@@ -1,53 +1,9 @@
 "use client";
-
-import { useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useForgot } from "./useForgot";
 
-export default function Forgot() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const validateEmail = (value: string) => {
-    return /\S+@\S+\.\S+/.test(value);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!email) {
-      setError("email is required");
-      return;
-    }
-
-    if (!validateEmail(email)) {
-      setError("please enter a valid email address");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch("http://localhost:3000/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.message || "failed to send reset code");
-        setLoading(false);
-        return;
-      }
-
-      router.push(`/verify?email=${encodeURIComponent(email)}`);
-    } catch {
-      setError("server error, please try again later");
-    }
-    setLoading(false);
-  };
+export default function ForgotUI() {
+  const { form, error, loading, handleChange, handleSubmit, router } = useForgot();
 
   return (
     <div
@@ -68,7 +24,6 @@ export default function Forgot() {
           Enter your email and we’ll send you a verification code
         </p>
 
-        {/* disable browser validation */}
         <form className="flex flex-col gap-6 w-full" onSubmit={handleSubmit} noValidate>
           <div className="flex flex-col w-full">
             <div className="flex items-center h-12 bg-gray-800 rounded-full px-4 text-white">
@@ -80,19 +35,14 @@ export default function Forgot() {
                 className="mr-3 opacity-70"
               />
               <input
-                type="text" // <--- ganti text supaya browser ga validasi otomatis
+                type="text"
                 placeholder="Email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setError("");
-                }}
+                value={form.email}
+                onChange={(e) => handleChange(e.target.value)}
                 className="bg-transparent outline-none w-full placeholder-gray-400"
               />
             </div>
-            {error && (
-              <p className="text-red-400 text-[12px] ml-3 mt-1">{error}</p>
-            )}
+            {error && <p className="text-red-400 text-[12px] ml-3 mt-1">{error}</p>}
           </div>
 
           <button

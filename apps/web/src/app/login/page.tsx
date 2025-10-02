@@ -1,106 +1,30 @@
 "use client";
-
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-
-type FormState = {
-  identifier: string;
-  password_hash: string;
-};
-
-export default function Login() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const router = useRouter();
-
-  const [form, setForm] = useState<FormState>({ identifier: "", password_hash: "" });
-  const [errors, setErrors] = useState<FormState>({ identifier: "", password_hash: "" });
-  const [rememberMe, setRememberMe] = useState(false);
-  const [loading, setLoading] = useState(false);
+import { useLogin } from "./useLogin";
+export default function LoginUI() {
+  const {
+    form,
+    errors,
+    rememberMe,
+    loading,
+    showPassword,
+    setShowPassword,
+    setRememberMe,
+    handleChange,
+    handleSubmit,
+    router,
+  } = useLogin();
 
   const handleRegisterRedirect = () => router.push("/register");
   const handleForgotPasswordRedirect = () => router.push("/forgot");
-
-  // validasi realtime & submit
-  const validateField = (name: string, value: string) => {
-    let error = "";
-    if (name === "identifier") {
-      if (!value) error = "username or email is required";
-    } else if (name === "password_hash") {
-      if (!value) error = "password is required";
-      else if (value.length < 8) error = "password must be at least 8 characters";
-    }
-    return error;
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-
-    // validasi realtime
-    const fieldError = validateField(name, value);
-    setErrors({ ...errors, [name]: fieldError });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // validasi semua field sebelum submit
-    const newErrors: FormState = {
-      identifier: validateField("identifier", form.identifier),
-      password_hash: validateField("password_hash", form.password_hash),
-    };
-    setErrors(newErrors);
-
-    if (!Object.values(newErrors).every((err) => err === "")) return;
-
-    setLoading(true);
-
-    try {
-      const res = await fetch("http://localhost:3000/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ ...form, rememberMe }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        const msg = (data.message || "").toLowerCase();
-        if (msg.includes("username") || msg.includes("identifier")) {
-          setErrors({ identifier: "we couldn't find an account with this username or email", password_hash: "" });
-        } else if (msg.includes("password")) {
-          setErrors({ identifier: "", password_hash: "the password you entered is incorrect" });
-        } else {
-          setErrors({ identifier: "", password_hash: "something went wrong, please try again later" });
-        }
-        setLoading(false);
-        return;
-      }
-
-      // redirect berdasarkan role
-      if (data.role === "admin") router.push("/admin");
-      else router.push("/dashboard");
-    } catch (err) {
-      setErrors({ identifier: "server error, please try again later", password_hash: "" });
-      setLoading(false);
-    }
-  };
 
   return (
     <div
       className="h-screen w-screen flex items-center justify-center bg-cover bg-center overflow-hidden"
       style={{ backgroundImage: "url('/bg1.png')" }}
     >
-      <div
-        className="px-12 py-8 bg-gray-800/60 backdrop-blur-sm rounded-2xl shadow-xl
-        w-full max-w-[440px] text-sm flex flex-col items-center
-        max-h-[96vh] overflow-y-auto custom-scroll"
-      >
+      <div className="px-12 py-8 bg-gray-800/60 backdrop-blur-sm rounded-2xl shadow-xl w-full max-w-[440px] text-sm flex flex-col items-center max-h-[96vh] overflow-y-auto custom-scroll">
         <Image src="/logo.svg" alt="Logo" width={100} height={100} className="mb-2" />
         <h1 className="text-2xl font-bold text-center text-white leading-relaxed mb-6">
           Welcome to <br /> Power Management System
@@ -128,7 +52,7 @@ export default function Login() {
             <div className="flex items-center h-12 bg-gray-800 rounded-full px-4 text-white">
               <Image src="/pw.svg" alt="password" width={19} height={20} className="mr-3 opacity-70" />
               <input
-                type={showPassword ? "text" : "password"} // <-- dynamically set type
+                type={showPassword ? "text" : "password"}
                 name="password_hash"
                 placeholder="Password"
                 value={form.password_hash}
@@ -137,7 +61,7 @@ export default function Login() {
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)} // <-- toggle showPassword
+                onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-5 text-gray-300 hover:text-white"
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}

@@ -1,7 +1,4 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-
-// ambil array request dari file device-request
 import * as deviceRequestModule from "../device-request/route";
 
 // @ts-ignore
@@ -20,11 +17,17 @@ export async function GET(req: Request) {
     return NextResponse.json({ status: "not-found" });
   }
 
-  // contoh otomatis: approved setelah 15 detik
+  // auto approve setelah 15 detik
   if (found.status === "pending" && Date.now() - found.time > 15000) {
     found.status = "approved";
     updateRequests([...requests]);
   }
 
-  return NextResponse.json({ status: found.status });
+  return NextResponse.json({
+    status: found.status,
+    lat: found.lat,
+    lng: found.lng,
+    segmen: found.segmen,
+    detail_address: found.detail_address,
+  });
 }

@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Power Management System",
   description: "Powered by Twatech",
+  icons: {
+    icon: "/logo.svg",
+  },
 };
 
 export default function RootLayout({

@@ -5,8 +5,15 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { FaFileExcel, FaSearch } from "react-icons/fa";
 
+const locations = [
+  { id: "loc1", name: "Gedung A" },
+  { id: "loc2", name: "Gedung B" },
+  { id: "loc3", name: "Gedung C" },
+];
+
 const data = Array.from({ length: 50 }, (_, i) => ({
   id: `0000${(i % 10) + 1}`,
+  location_id: locations[i % locations.length].id,
   date: "2025-08-20",
   time: `10:19:${String(i % 10).padStart(2, "0")}`,
   voltage: 220,
@@ -36,16 +43,18 @@ export default function DataTable() {
     setCurrentPage(1);
   }, [debouncedSearch, filterDate, timeFrom, timeTo, show]);
 
+  const [selectedLocation, setSelectedLocation] = useState("");
+
   // filter data
   const filteredData = useMemo(() => {
     return data.filter(
       (d) =>
-        d.id.includes(debouncedSearch) &&
+        (!selectedLocation || d.location_id === selectedLocation) &&
         (!filterDate || d.date === filterDate) &&
         (!timeFrom || d.time >= timeFrom) &&
         (!timeTo || d.time <= timeTo)
     );
-  }, [debouncedSearch, filterDate, timeFrom, timeTo]);
+  }, [selectedLocation, filterDate, timeFrom, timeTo]);
 
   // pagination pakai useMemo
   const paginatedData = useMemo(() => {
@@ -133,20 +142,23 @@ export default function DataTable() {
           </select>
         </div>
 
-        {/* Device ID */}
+        {/* Location */}
         <div className="flex flex-col col-span-2">
-          <label className="mb-1 font-semibold">Device ID</label>
-          <div className="relative">
-            <FaSearch className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-300 text-xs" />
-            <input
-              type="text"
-              placeholder="Search Device ID"
-              className="p-2 pl-8 rounded-lg bg-[#123060] text-white w-full text-xs"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+          <label className="mb-1 font-semibold">Location</label>
+          <select
+            className="p-2 rounded-lg bg-[#123060] text-white text-xs w-full"
+            value={selectedLocation}
+            onChange={(e) => setSelectedLocation(e.target.value)}
+          >
+            <option value="">All Locations</option>
+            {locations.map((loc) => (
+              <option key={loc.id} value={loc.id}>
+                {loc.name}
+              </option>
+            ))}
+          </select>
         </div>
+
 
         {/* Date */}
         <div className="flex flex-col">
