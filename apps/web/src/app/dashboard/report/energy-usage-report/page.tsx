@@ -5,38 +5,54 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { FaFileExcel, FaSearch } from "react-icons/fa";
 
-const data = [
-  { id: "000001", date: "2025-08-20", time: "23:59:59", energy: 1220, cost: 25000, mtd_usage_cost: 250000 },
-  { id: "000002", date: "2025-08-21", time: "23:59:59", energy: 1230, cost: 25000, mtd_usage_cost: 275000 },
-  { id: "000003", date: "2025-08-22", time: "23:59:59", energy: 1240, cost: 25000, mtd_usage_cost: 300000 },
-  { id: "000004", date: "2025-08-23", time: "23:59:59", energy: 1250, cost: 25000, mtd_usage_cost: 325000 },
-  { id: "000005", date: "2025-08-24", time: "23:59:59", energy: 1260, cost: 25000, mtd_usage_cost: 350000 },
-  { id: "000006", date: "2025-08-25", time: "23:59:59", energy: 1270, cost: 25000, mtd_usage_cost: 375000 },
-  { id: "000007", date: "2025-08-26", time: "23:59:59", energy: 1280, cost: 25000, mtd_usage_cost: 400000 },
-  { id: "000008", date: "2025-08-27", time: "23:59:59", energy: 1290, cost: 25000, mtd_usage_cost: 425000 },
-  { id: "000009", date: "2025-08-28", time: "23:59:59", energy: 1300, cost: 25000, mtd_usage_cost: 450000 },
-  { id: "000010", date: "2025-08-29", time: "23:59:59", energy: 1310, cost: 25000, mtd_usage_cost: 475000 },
+const locations = [
+  { id: "loc1", name: "Gedung A" },
+  { id: "loc2", name: "Gedung B" },
+  { id: "loc3", name: "Gedung C" },
 ];
+
+const data = Array.from({ length: 50 }, (_, i) => ({
+  id: `0000${(i % 10) + 1}`,
+  location_id: locations[i % locations.length].id,
+  date: "2025-08-20",
+  time: `10:19:${String(i % 10).padStart(2, "0")}`,
+  energy: 1220,
+  cost: 25000,
+  mtd_usage_cost: 250000,
+}));
 
 export default function DataTable() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [show, setShow] = useState(10);
+  const [filterDate, setFilterDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  // reset Page saat filter berubah
+  // debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // reset page saat filter berubah
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, dateFrom, dateTo, show]);
+  }, [debouncedSearch, filterDate, dateFrom, dateTo, show]);
 
-  // filtering pakai useMemo
+  const [selectedLocation, setSelectedLocation] = useState("");
+
+  // filter data
   const filteredData = useMemo(() => {
-    return data
-      .filter((d) => d.id.includes(search))
-      .filter((d) => (dateFrom ? new Date(d.date) >= new Date(dateFrom) : true))
-      .filter((d) => (dateTo ? new Date(d.date) <= new Date(dateTo) : true));
-  }, [search, dateFrom, dateTo]);
+    return data.filter(
+      (d) =>
+        (!selectedLocation || d.location_id === selectedLocation) &&
+        (!filterDate || d.date === filterDate) &&
+        (!dateFrom || d.time >= dateFrom) &&
+        (!dateTo || d.time <= dateTo)
+    );
+  }, [selectedLocation, filterDate, dateFrom, dateTo]);
 
   // pagination pakai useMemo
   const paginatedData = useMemo(() => {
@@ -44,7 +60,7 @@ export default function DataTable() {
     return filteredData.slice((currentPage - 1) * show, currentPage * show);
   }, [filteredData, show, currentPage]);
 
-  const totalPages = show === -1 ? 1 : Math.ceil(filteredData.length / show);
+  const totalPages = show === -1 ? 1 : Math.ceil(filteredData.length / show);  
 
   // export to Excel
   const exportXLS = async () => {
@@ -115,19 +131,21 @@ export default function DataTable() {
           </select>
         </div>
 
-        {/* Device ID */}
-        <div className="flex flex-col">
-          <label className="mb-1 font-semibold">Device ID</label>
-          <div className="relative">
-            <FaSearch className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-300 text-xs" />
-            <input
-              type="text"
-              placeholder="Search Device ID"
-              className="p-2 pl-8 rounded-lg bg-[#123060] text-white w-full text-xs"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+        {/* Location */}
+        <div className="flex flex-col col-span-1">
+          <label className="mb-1 font-semibold">Location</label>
+          <select
+            className="p-2 rounded-lg bg-[#123060] text-white text-xs w-full"
+            value={selectedLocation}
+            onChange={(e) => setSelectedLocation(e.target.value)}
+          >
+            <option value="">All Locations</option>
+            {locations.map((loc) => (
+              <option key={loc.id} value={loc.id}>
+                {loc.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Date From */}
@@ -203,6 +221,7 @@ export default function DataTable() {
                   <td className="px-2 py-1">
                     {row.mtd_usage_cost.toLocaleString("id-ID")}
                   </td>
+                  
                 </tr>
               ))
             )}

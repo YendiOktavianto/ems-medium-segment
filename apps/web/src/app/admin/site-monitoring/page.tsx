@@ -22,7 +22,7 @@ const containerStyle = { width: "100%", height: "516px" };
 
 export default function HomePage() {
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY!,
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
   });
 
   // simpan center sekali saja

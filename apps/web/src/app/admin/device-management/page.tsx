@@ -348,10 +348,15 @@ export default function DataTable(): React.JSX.Element {
       {/* Modal Edit */}
       {editRow && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50">
-          <div className="bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full text-white">
-            <h2 className="text-lg font-bold mb-4">Edit Device</h2>
+          <div className= "rounded-2xl shadow-2xl p-6 max-w-md w-full text-white"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(0,60,140,1) 0%, rgba(0,30,70,1) 300%)",
+            }}
+          >
+            <h2 className="text-lg font-bold mb-4 text-center">Edit Device</h2>
 
-            <div className="flex flex-col gap-3 text-sm">
+            <div className="flex flex-col gap-2 text-sm">
               <div>
                 <label className="block mb-1">Address Name</label>
                 <input
@@ -379,7 +384,7 @@ export default function DataTable(): React.JSX.Element {
               <div>
                 <label className="block mb-1">Latitute</label>
                 <input
-                  type="number"
+                  type="teks"
                   value={editRow.lat}
                   onChange={(e) =>
                     setEditRow({ ...editRow, lat:parseFloat(e.target.value) })
@@ -391,7 +396,7 @@ export default function DataTable(): React.JSX.Element {
               <div>
                 <label className="block mb-1">Longtitute</label>
                 <input
-                  type="number"
+                  type="teks"
                   value={editRow.long}
                   onChange={(e) =>
                     setEditRow({ ...editRow, long: parseFloat(e.target.value) })
@@ -413,18 +418,18 @@ export default function DataTable(): React.JSX.Element {
               </div>
             </div>
            
-            <div className="flex justify-end gap-2 mt-6">
+            <div className="flex justify-end gap-2 mt-10">
               <button
                 onClick={() => setEditRow(null)}
-                className="px-6 py-1 rounded bg-gray-500 hover:bg-gray-600 transition"
+                className="px-4 py-1 rounded-full bg-gray-500 hover:bg-gray-600 transition"
               >
-                Batal
+                Cancel
               </button>
               <button
                 onClick={handleSaveEdit}
-                className="px-5 py-1 rounded bg-blue-600 hover:bg-blue-700 transition"
+                className="px-4 py-1 rounded-full bg-blue-500 hover:bg-blue-600 transition"
               >
-                Simpan
+                Save
               </button>
             </div>
           </div>

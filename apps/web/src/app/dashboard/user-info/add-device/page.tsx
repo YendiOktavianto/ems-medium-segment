@@ -1,14 +1,17 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
-import { GoogleMap, Marker, useLoadScript, Autocomplete } from "@react-google-maps/api";
 
-type Option = {
-  id: string;
-  nama: string;
-  parent_id?: string;
-  lat?: number;
-  lng?: number;
-  kode_pos?: string;
+import { useEffect, useState } from "react";
+import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
+
+type DataItem = {
+  code: string;
+  postal: number;
+  province: string;
+  city: string;
+  district: string;
+  village: string;
+  latitude: number;
+  longitude: number;
 };
 
 type Request = {
@@ -18,129 +21,108 @@ type Request = {
   detail_address: string;
   lat: number;
   lng: number;
-  status: string; // pending, approved, rejected
+  status: string;
+  time: number;
 };
 
 export default function AddDevicePage() {
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-    libraries: ["places"],
   });
 
-  const [allData, setAllData] = useState<Option[]>([]);
-  const [provinsi, setProvinsi] = useState<Option[]>([]);
-  const [kabupaten, setKabupaten] = useState<Option[]>([]);
-  const [kecamatan, setKecamatan] = useState<Option[]>([]);
-  const [kelurahan, setKelurahan] = useState<Option[]>([]);
-  const [marker, setMarker] = useState({ lat: -6.1751, lng: 106.865 });
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-
+  const [allData, setAllData] = useState<DataItem[]>([]);
   const [form, setForm] = useState({
-    nama_jalan: "",
-    provinsi_id: "",
-    kabupaten_id: "",
-    kecamatan_id: "",
-    kelurahan_id: "",
-    kode_pos: "",
+    street_name: "",
+    province_id: "",
+    city_id: "",
+    district_id: "",
+    subdistrict_id: "",
+    postal_code: "",
     segmen: "",
     detail_address: "",
     lat: -6.1751,
     lng: 106.865,
   });
-
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [markerEdited, setMarkerEdited] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [requestId, setRequestId] = useState<number | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
   const [history, setHistory] = useState<Request[]>([]);
+
+  // overlay states
+  const [showOverlayConfirm, setShowOverlayConfirm] = useState(false);
+  const [showOverlayWarning, setShowOverlayWarning] = useState(false);
 
   useEffect(() => {
     fetch("/data/data.json")
       .then((res) => res.json())
-      .then((json) => {
-        setAllData(json);
-        setProvinsi(json.filter((d: Option) => !d.parent_id));
-      })
+      .then((json) => setAllData(json))
       .catch(console.error);
   }, []);
 
-  useEffect(() => {
-    fetch("/api/device-requests")
-      .then((res) => res.json())
-      .then((data: Request[]) => setHistory(data))
-      .catch(console.error);
-  }, []);
-
-  // Cascade dropdowns
-  useEffect(() => {
-    if (form.provinsi_id) {
-      setKabupaten(allData.filter((d) => d.parent_id === form.provinsi_id));
-      setKecamatan([]);
-      setKelurahan([]);
-      setForm((prev) => ({ ...prev, kabupaten_id: "", kecamatan_id: "", kelurahan_id: "" }));
-    } else setKabupaten([]), setKecamatan([]), setKelurahan([]);
-  }, [form.provinsi_id, allData]);
-
-  useEffect(() => {
-    if (form.kabupaten_id) {
-      setKecamatan(allData.filter((d) => d.parent_id === form.kabupaten_id));
-      setKelurahan([]);
-      setForm((prev) => ({ ...prev, kecamatan_id: "", kelurahan_id: "" }));
-    } else setKecamatan([]), setKelurahan([]);
-  }, [form.kabupaten_id, allData]);
-
-  useEffect(() => {
-    if (form.kecamatan_id) {
-      setKelurahan(allData.filter((d) => d.parent_id === form.kecamatan_id));
-      setForm((prev) => ({ ...prev, kelurahan_id: "" }));
-    } else setKelurahan([]);
-  }, [form.kecamatan_id, allData]);
+  const provinces = Array.from(new Set(allData.map((d) => d.province))).map((p) => ({ name: p }));
+  const cities = form.province_id
+    ? Array.from(new Set(allData.filter((d) => d.province === form.province_id).map((d) => d.city))).map((c) => ({ name: c }))
+    : [];
+  const districts = form.city_id
+    ? Array.from(new Set(allData.filter((d) => d.city === form.city_id).map((d) => d.district))).map((k) => ({ name: k }))
+    : [];
+  const subdistricts = form.district_id
+    ? allData
+        .filter((d) => d.district === form.district_id)
+        .map((v) => ({ code: v.code, name: v.village, postal: v.postal, lat: v.latitude, lng: v.longitude }))
+    : [];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
 
-    if (name === "kelurahan_id") {
-      const kel = allData.find((d) => d.id === value || d.nama === value);
-      if (kel) {
+    if (name === "province_id") setForm((prev) => ({ ...prev, city_id: "", district_id: "", subdistrict_id: "" }));
+    if (name === "city_id") setForm((prev) => ({ ...prev, district_id: "", subdistrict_id: "" }));
+    if (name === "district_id") setForm((prev) => ({ ...prev, subdistrict_id: "" }));
+
+    if (name === "subdistrict_id") {
+      const v = subdistricts.find((k) => k.name === value);
+      if (v) {
         setForm((prev) => ({
           ...prev,
-          kode_pos: kel.kode_pos || prev.kode_pos,
-          lat: kel.lat || prev.lat,
-          lng: kel.lng || prev.lng,
+          lat: v.lat,
+          lng: v.lng,
+          postal_code: String(v.postal),
+          subdistrict_id: v.name,
         }));
-        if (kel.lat && kel.lng) setMarker({ lat: kel.lat, lng: kel.lng });
-      }
-    }
-    if (name === "provinsi_id" || name === "kabupaten_id" || name === "kecamatan_id") {
-      const opt = allData.find((d) => d.id === value || d.nama === value);
-      if (opt) setForm((prev) => ({ ...prev, [name]: opt.id }));
-    }
-  };
-
-  const onPlaceChanged = () => {
-    if (autocompleteRef.current) {
-      const place = autocompleteRef.current.getPlace();
-      if (place?.geometry?.location) {
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        setMarker({ lat, lng });
-        setForm((prev) => ({ ...prev, lat, lng, nama_jalan: place.formatted_address || prev.nama_jalan }));
+        setMarkerEdited(false);
       }
     }
   };
 
-  const handleSubmit = async () => {
-    if (!form.nama_jalan) return alert("Alamat wajib diisi");
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+    if (!form.street_name) newErrors.street_name = "Street name is required";
+    if (!form.province_id) newErrors.province_id = "Province is required";
+    if (!form.city_id) newErrors.city_id = "City/Regency is required";
+    if (!form.district_id) newErrors.district_id = "District is required";
+    if (!form.subdistrict_id) newErrors.subdistrict_id = "Sub-district is required";
+    if (!form.postal_code) newErrors.postal_code = "Postal code is required";
+    if (!form.segmen) newErrors.segmen = "Segment is required";
+    if (!form.detail_address) newErrors.detail_address = "Detail address is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (!validateForm()) return;
+    if (!markerEdited) {
+      setShowOverlayWarning(true); // ⚠️ show warning overlay
+      return;
+    }
+    setShowOverlayConfirm(true);
+  };
+
+  const doSubmit = async () => {
     setLoading(true);
-
     try {
-      const prov = allData.find((d) => d.id === form.provinsi_id)?.nama || form.provinsi_id;
-      const kab = allData.find((d) => d.id === form.kabupaten_id)?.nama || form.kabupaten_id;
-      const kec = allData.find((d) => d.id === form.kecamatan_id)?.nama || form.kecamatan_id;
-      const kel = allData.find((d) => d.id === form.kelurahan_id)?.nama || form.kelurahan_id;
-
-      const address = `${form.nama_jalan}, ${kel}, ${kec}, ${kab}, ${prov}, ${form.kode_pos}`;
-
+      const address = `${form.street_name}, ${form.subdistrict_id}, ${form.district_id}, ${form.city_id}, ${form.province_id}, ${form.postal_code}`;
       const payload = {
         address,
         segmen: form.segmen,
@@ -155,195 +137,222 @@ export default function AddDevicePage() {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
-      setRequestId(data.id);
-      setStatus(data.status);
+      if (!res.ok) throw new Error("Failed to submit request");
+      const saved: Request = await res.json();
+      setHistory((prev) => [...prev, saved]);
 
-      // update history
-      setHistory((prev) => [...prev, { ...payload, id: data.id, status: data.status }]);
-
-      // reset form untuk request berikutnya
       setForm({
-        nama_jalan: "",
-        provinsi_id: "",
-        kabupaten_id: "",
-        kecamatan_id: "",
-        kelurahan_id: "",
-        kode_pos: "",
+        street_name: "",
+        province_id: "",
+        city_id: "",
+        district_id: "",
+        subdistrict_id: "",
+        postal_code: "",
         segmen: "",
         detail_address: "",
-        lat: -6.1751,
-        lng: 106.865,
+        lat: form.lat,
+        lng: form.lng,
       });
-      setMarker({ lat: -6.1751, lng: 106.865 });
+      setMarkerEdited(false);
     } catch (err) {
       console.error(err);
-      alert("Gagal kirim request");
+      alert("Failed to submit request");
+    } finally {
+      setLoading(false);
+      setShowOverlayConfirm(false);
     }
-
-    setLoading(false);
   };
 
-  // polling status terakhir
-  useEffect(() => {
-    if (requestId) {
-      const interval = setInterval(() => {
-        fetch(`/api/device-status?id=${requestId}`)
-          .then((res) => res.json())
-          .then((data) => {
-            setStatus(data.status);
-            setHistory((prev) =>
-              prev.map((r) => (r.id === requestId ? { ...r, status: data.status } : r))
-            );
-          })
-          .catch(console.error);
-      }, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [requestId]);
-
-  if (!isLoaded) return <div className="text-white text-[10px]">Loading Map...</div>;
+  if (!isLoaded) return <div className="text-white text-xs">Loading Map...</div>;
 
   const inputClass =
-    "w-full h-7 px-2 bg-[#3A3A3A]/40 rounded-lg text-white text-[10px] placeholder-gray-400 " +
-    "focus:ring-1 focus:ring-blue-400 outline-none transition duration-150";
+  "w-full h-7 px-3 bg-[#1e1e2f] border border-gray-600 rounded-lg text-white text-xs placeholder-gray-400 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 outline-none";
+
+  const errorClass = "text-red-400 text-[10px] mt-1";
 
   return (
-    <div className="rounded-xl p-2 mx-auto mr-8" style={{ background: "linear-gradient(90deg, rgba(6,11,40,0.74) 0%, rgba(10,14,35,0.71) 100%)" }}>
-      <h2 className="text-sm font-bold text-white text-center mb-2 w-full md:w-auto">Request New Device</h2>
-
-      <div className="flex flex-col md:flex-row w-full max-w-7xl bg-[#15204f]/90 backdrop-blur-md rounded-xl shadow-md p-3 border border-blue-500 gap-3">
-        {/* Form input selalu aktif */}
-        <div className="flex flex-col md:w-1/2 gap-1 overflow-hidden">
-          <div className="space-y-3">
-            <label className="text-[9px] font-medium text-gray-300">Street</label>
-            <Autocomplete onLoad={(ref) => (autocompleteRef.current = ref)} onPlaceChanged={onPlaceChanged}>
-              <input
-                name="nama_jalan"
-                value={form.nama_jalan}
-                onChange={handleChange}
-                className={inputClass}
-                placeholder="Street name, number"
-              />
-            </Autocomplete>
+    <div
+      className="rounded-2xl p-8 mx-auto mr-8 mb-8"
+      style={{
+        background:
+          "linear-gradient(90deg, rgba(6,11,40,0.74) 0%, rgba(10,14,35,0.71) 100%)",
+      }}
+    >
+      <h2 className="text-2xl font-semibold">Request New Device</h2>
+      <p className="text-sm  mb-4">This is location for your device monitoring</p>
+      <div className="flex flex-col md:flex-row gap-15">
+        {/* Form */}
+        <div className="flex-1 space-y-2">
+          <div>
+            <label className="text-white text-[10px]">Street</label>
+            <input
+              name="street_name"
+              value={form.street_name}
+              onChange={handleChange}
+              className={inputClass}
+              placeholder="Street name, house number"
+            />
+            {errors.street_name && <p className={errorClass}>{errors.street_name}</p>}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            {[
-              { label: "Province", name: "provinsi_id", options: provinsi },
-              { label: "Regency/City", name: "kabupaten_id", options: kabupaten },
-              { label: "District", name: "kecamatan_id", options: kecamatan },
-              { label: "Sub-district", name: "kelurahan_id", options: kelurahan },
-            ].map(({ label, name, options }) => (
-              <div key={name} className="space-y-3 relative">
-                <label className="text-[9px] font-medium text-gray-300">{label}</label>
-                <input
-                  list={`${name}-list`}
-                  name={name}
-                  value={(form as any)[name]}
-                  onChange={handleChange}
-                  className={inputClass + " pointer-events-auto"}
-                  placeholder={`Type or select ${label}`}
-                />
-                <datalist id={`${name}-list`}>
-                  {options.map((opt) => (
-                    <option key={opt.id} value={opt.nama} />
-                  ))}
-                </datalist>
-              </div>
-            ))}
+          {/* Province / City / District / Sub */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div>
+              <label className="text-[10px] text-white">Province</label>
+              <select name="province_id" value={form.province_id} onChange={handleChange} className={inputClass}>
+                <option value="">Select Province</option>
+                {provinces.map((p) => (
+                  <option key={p.name} value={p.name}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              {errors.province_id && <p className={errorClass}>{errors.province_id}</p>}
+            </div>
+            <div>
+              <label className="text-[10px] text-white">City/Regency</label>
+              <select name="city_id" value={form.city_id} onChange={handleChange} className={inputClass}>
+                <option value="">Select City</option>
+                {cities.map((k) => (
+                  <option key={k.name} value={k.name}>
+                    {k.name}
+                  </option>
+                ))}
+              </select>
+              {errors.city_id && <p className={errorClass}>{errors.city_id}</p>}
+            </div>
+            <div>
+              <label className="text-[10px] text-white">District</label>
+              <select name="district_id" value={form.district_id} onChange={handleChange} className={inputClass}>
+                <option value="">Select District</option>
+                {districts.map((k) => (
+                  <option key={k.name} value={k.name}>
+                    {k.name}
+                  </option>
+                ))}
+              </select>
+              {errors.district_id && <p className={errorClass}>{errors.district_id}</p>}
+            </div>
+            <div>
+              <label className="text-[10px] text-white">Sub-district / Village</label>
+              <select name="subdistrict_id" value={form.subdistrict_id} onChange={handleChange} className={inputClass}>
+                <option value="">Select Sub-district</option>
+                {subdistricts.map((k) => (
+                  <option key={k.code} value={k.name}>
+                    {k.name}
+                  </option>
+                ))}
+              </select>
+              {errors.subdistrict_id && <p className={errorClass}>{errors.subdistrict_id}</p>}
+            </div>
           </div>
 
-          <div className="space-y-3">
-            <label className="text-[9px] font-medium text-gray-300">Postal Code</label>
-            <input name="kode_pos" value={form.kode_pos} onChange={handleChange} className={inputClass} placeholder="Postal Code" />
+          <div>
+            <label className="text-[10px] text-white">Postal Code</label>
+            <input value={form.postal_code} readOnly className={inputClass} />
           </div>
 
-          <div className="space-y-3">
-            <label className="text-[9px] font-medium text-gray-300">Segment</label>
-            <input name="segmen" value={form.segmen} onChange={handleChange} className={inputClass} placeholder="School, Residence, SOHO, etc" />
+          <div>
+            <label className="text-[10px] text-white">Segment</label>
+            <input name="segmen" value={form.segmen} onChange={handleChange} className={inputClass} />
+            {errors.segmen && <p className={errorClass}>{errors.segmen}</p>}
           </div>
 
-          <div className="space-y-3">
-            <label className="text-[9px] font-medium text-gray-300">Detail Address</label>
-            <input name="detail_address" value={form.detail_address} onChange={handleChange} className={inputClass} placeholder="1st floor, 2nd floor, etc" />
+          <div>
+            <label className="text-[10px] text-white">Detail Address</label>
+            <input name="detail_address" value={form.detail_address} onChange={handleChange} className={inputClass} />
+            {errors.detail_address && <p className={errorClass}>{errors.detail_address}</p>}
           </div>
 
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="mt-5 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold text-xs rounded-xl shadow-sm hover:scale-[1.01] transition duration-150"
-          >
-            {loading ? "Mengirim..." : "Kirim Request"}
+          <button onClick={handleSubmit} disabled={loading} className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl shadow-md text-sm">
+            {loading ? "Submitting..." : "Submit Request"}
           </button>
         </div>
 
-        <div className="md:w-1/2 h-64 md:h-auto rounded-xl overflow-hidden border border-blue-500 shadow pointer-events-auto">
+        {/* Map */}
+        <div className="flex-1 h-64 md:h-auto rounded-xl overflow-hidden border border-blue-500">
           <GoogleMap
             mapContainerClassName="w-full h-full"
-            center={marker}
+            center={{ lat: form.lat, lng: form.lng }}
             zoom={14}
             onClick={(e) => {
               if (e.latLng) {
                 const lat = e.latLng.lat();
                 const lng = e.latLng.lng();
-                setMarker({ lat, lng });
+                setMarkerEdited(true);
                 setForm((prev) => ({ ...prev, lat, lng }));
               }
             }}
           >
             <Marker
-              position={marker}
+              position={{ lat: form.lat, lng: form.lng }}
               draggable
               onDragEnd={(e) => {
                 if (e.latLng) {
                   const lat = e.latLng.lat();
                   const lng = e.latLng.lng();
-                  setMarker({ lat, lng });
+                  setMarkerEdited(true);
                   setForm((prev) => ({ ...prev, lat, lng }));
                 }
               }}
             />
           </GoogleMap>
-          <p className="text-[8px] text-gray-400 mt-1 text-center">
-            {marker.lat.toFixed(5)}, {marker.lng.toFixed(5)}
+          <p className="text-[8px] text-yellow-400 mt-1 text-center font-bold">
+            ⚠️ Please make sure the marker is set to the exact location before submitting.
           </p>
         </div>
       </div>
 
-      {/* Status terakhir request */}
-      {requestId && (
-        <div className="text-center mt-3 text-[9px]">
-          <p className="text-gray-300">ID Request: {requestId}</p>
-          {status === "pending" && <span className="text-yellow-400">Menunggu persetujuan Admin ⏳</span>}
-          {status === "approved" && <span className="text-green-400 font-bold">Request Anda diterima Admin ✅</span>}
-          {status === "rejected" && <span className="text-red-400 font-bold">Request Anda ditolak Admin ❌</span>}
+      {/* Overlay: Warning (must move marker) */}
+      {showOverlayWarning && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-[#1f2a5b] p-6 rounded-lg shadow-lg text-center max-w-sm w-full">
+            <h3 className="text-white font-bold text-sm mb-3">Marker Required</h3>
+            <p className="text-gray-300 text-xs mb-4">
+              You must adjust the map marker before you can submit the request.
+            </p>
+            <button
+              onClick={() => setShowOverlayWarning(false)}
+              className="px-3 py-1 bg-blue-500 text-white text-xs rounded"
+            >
+              OK, I’ll set the marker
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Riwayat request */}
-      <div className="mt-5 max-w-7xl mx-auto bg-[#15204f]/80 backdrop-blur-md rounded-xl p-3 border border-blue-500">
-        <h3 className="text-xs font-semibold text-white mb-2">Riwayat Request Device</h3>
-        {history.length === 0 ? (
-          <p className="text-[8px] text-gray-400">Belum ada request</p>
-        ) : (
-          <ul className="space-y-1 text-[8px]">
-            {history.map((r) => (
-              <li key={r.id} className="flex justify-between bg-[#1f2a5b]/80 rounded-md p-2">
-                <div>
-                  <p className="text-gray-200">{r.address}</p>
-                  <p className="text-gray-400">{r.segmen}, {r.detail_address}</p>
-                </div>
-                <div className="text-right">
-                  {r.status === "pending" && <span className="text-yellow-400">Pending ⏳</span>}
-                  {r.status === "approved" && <span className="text-green-400 font-bold">Approved ✅</span>}
-                  {r.status === "rejected" && <span className="text-red-400 font-bold">Rejected ❌</span>}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {/* Overlay: Final Confirmation */}
+      {showOverlayConfirm && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-[#1f2a5b] p-6 rounded-lg shadow-lg text-center max-w-sm w-full">
+            <h3 className="text-white font-bold text-sm mb-3">Final Confirmation</h3>
+            <p className="text-gray-300 text-xs mb-4">
+              Location chosen:
+              <br />
+              <span className="font-bold text-yellow-300">
+                {form.lat.toFixed(5)}, {form.lng.toFixed(5)}
+              </span>
+              <br />
+              Is this correct?
+              Once submitted, only administrators can make changes.
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setShowOverlayConfirm(false)}
+                className="px-3 py-1 bg-gray-500 text-white text-xs rounded"
+              >
+                Check Again
+              </button>
+              <button
+                onClick={doSubmit}
+                className="px-3 py-1 bg-red-500 text-white text-xs rounded"
+              >
+                Confirm & Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

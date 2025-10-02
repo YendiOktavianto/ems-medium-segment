@@ -29,9 +29,123 @@ html, body {
   overflow-x: hidden;
 }
 
+.custom-scrollbar {
+  padding-right: 8px; /* jarak kanan konten ke scrollbar */
+  padding-left: 8px;  /* jarak kiri konten ke scrollbar */
+}
+
 /* untuk browser berbasis webkit (chrome, edge, safari) */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
+  width: 20px;
+  position: absolute; /* biar tumpuk */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 47, 108, 0.5); /* biru navy transparan */
+  border-radius: 9999px;
+  border: 2px solid transparent; /* kasih spasi biar efek overlay */
+  background-clip: content-box; /* biar ada ruang transparan */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 47, 108, 0.7);
+}
+
+/* 🦊 firefox */
+.custom-scroll {
+  scrollbar-color: rgba(226, 226, 226, 0.5) transparent;
+}
+
+/* === PHONE INPUT CUSTOM === */
+.react-tel-input .form-control {
+  border: none !important;
+  border-radius: 9999px !important;
+  color: white !important;
+  padding-left: 3rem !important;
+  height: 1rem !important;
+  width: 100% !important;
+  font-size: 0.875rem !important; /* text-sm */
+}
+
+/* jangan hapus background-image bendera */
+.react-tel-input .flag-dropdown {
+  background-color: transparent !important; /* pakai background-color bukan background */
+  border: none !important;
+  border-radius: 9999px 0 0 9999px !important;
+}
+
+/* selected-flag: jangan hapus background-image */
+.react-tel-input .selected-flag {
+  background-color: transparent !important;
+  border-right: none !important;
+}
+
+/* list dropdown */
+.react-tel-input .country-list {
+  background: #1f2937 !important; /* dark gray dropdown */
+  color: white !important;
+}
+
+.react-tel-input .country-list .country:hover {
+  background-color: #111827 !important; /* hover darker */
+}
+
+/* dropdown list */
+.react-tel-input .country-list {
+  background: #1f2937 282C32 !important; /* abu gelap */
+  color: white !important;
+  border-radius: 0.375rem !important; /* optional rounded */
+}
+
+/* item negara */
+.react-tel-input .country-list .country {
+  padding: 6px 10px !important;
+  cursor: pointer;
+}
+
+/* efek hover */
+.react-tel-input .country-list .country:hover {
+  background-color: #2196F3 !important; /* biru saat hover */
+  color: #ffffff !important;
+}
+
+/* item yg selected */
+.react-tel-input .country-list .country.highlight {
+  background-color: #2196F3 !important; /* warna sama saat highlight keyboard */
+  color: #ffffff !important;
+}
+
+/* Autofill mengikuti warna input custom */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  /* ganti sesuai warna input kamu */
+  -webkit-box-shadow: 0 0 0px 1000px rgba(58, 58, 58, 0) inset !important;
+  box-shadow: 0 0 0px 1000px rgba(58, 58, 58, 0) inset !important;
+
+  /* warna teks autofill */
+  -webkit-text-fill-color: #ffffff !important;
+
+  /* supaya transisinya smooth */
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+input,
+textarea,
+.react-tel-input .form-control {
+  caret-color: #fff; 
+}
+
+
+/* untuk browser berbasis webkit (chrome, edge, safari) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 9px;
   background: transparent; /* transparan supaya konten di bawah keliatan */
   position: absolute; /* biar tumpuk */
 }
@@ -143,3 +257,4 @@ textarea,
 .react-tel-input .form-control {
   caret-color: #fff; 
 }
+
