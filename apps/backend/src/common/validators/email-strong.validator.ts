@@ -15,14 +15,9 @@ export function IsStrongEmail(validationOptions?: ValidationOptions) {
           const parts = val.split('@');
           if (parts.length !== 2) return false;
           const [local, domain] = parts;
-
-          // local-part: huruf/angka . _ + ~ -
           if (!/^[A-Za-z0-9._+~-]+$/.test(local)) return false;
-
-          // domain: label 1–63, tidak mulai/akhir dash, TLD huruf ≥2, multi-label boleh
           const domainRegex =
             /^(?!-)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\.(?!-)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?))*\.[A-Za-z]{2,}$/;
-
           return domainRegex.test(domain);
         },
         defaultMessage(args: ValidationArguments) {

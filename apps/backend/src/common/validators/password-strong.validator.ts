@@ -14,16 +14,13 @@ export function IsStrongPassword(validationOptions?: ValidationOptions) {
         validate(v: any, args: ValidationArguments) {
           if (typeof v !== 'string') return false;
           if (v.length < 8 || v.length > 20) return false;
-          // minimal 1 upper, 1 lower, 1 digit, 1 simbol
           if (!/[A-Z]/.test(v)) return false;
           if (!/[a-z]/.test(v)) return false;
           if (!/[0-9]/.test(v)) return false;
           if (!/[^A-Za-z0-9]/.test(v)) return false;
-          // tolak pola umum & urutan sederhana
           if (/(0123|1234|2345|3456|4567|5678|6789)/.test(v)) return false;
           const lc = v.toLowerCase();
           if (COMMON_PATTERNS.some((p) => lc.includes(p))) return false;
-          // (opsional) hindari tanggal: pola ddmmyyyy / yyyy mm dd sederhana
           if (/\b(?:\d{2}[-/]?\d{2}[-/]?\d{4}|\d{4}[-/]?\d{2}[-/]?\d{2})\b/.test(v)) return false;
           return true;
         },
