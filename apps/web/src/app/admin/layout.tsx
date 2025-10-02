@@ -5,11 +5,15 @@ import Sidebar from "../components/AdminSidebar";
 import Header from "../components/Header";
 import { usePathname } from "next/navigation";
 import Logout from "./logout/page";
+import LoadingOverlay from "../components/LoadingOverlay"; // 🔹 import overlay
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [time, setTime] = useState("");
   const [selectedPage, setSelectedPage] = useState("dashboard");
   const [showLogoutOverlay, setShowLogoutOverlay] = useState(false);
+
+  // 🔹 state loading overlay
+  const [loading, setLoading] = useState(false);
 
   const pathname = usePathname();
 
@@ -28,13 +32,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setSelectedPage("Summary Report");
     } else if (currentPath.includes("energy-usage-report")) {
       setSelectedPage("Energy Usage Report");
-    } else if (currentPath.includes("List Cost Energy")) {
+    } else if (currentPath.includes("list-cost-energy")) {
       setSelectedPage("List Cost Energy");
     } else if (currentPath.includes("logout")) {
       setSelectedPage("Logout");
     } else {
       setSelectedPage("Dashboard");
     }
+
+    // aktifkan loading setiap kali ganti path
+    setLoading(true);
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
   }, [pathname]);
 
   // clock
@@ -61,6 +70,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       className="min-h-screen flex bg-cover bg-center bg-fixed"
       style={{ backgroundImage: "url('/bg2.png')" }}
     >
+      {/* 🔹 overlay loading full page */}
+      <LoadingOverlay show={loading} />
+
       {/* sidebar kiri */}
       <div>
         <Sidebar
@@ -83,8 +95,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {showLogoutOverlay && (
         <Logout
-            setSelectedPage={setSelectedPage}
-            setShowLogoutOverlay={setShowLogoutOverlay}
+          setSelectedPage={setSelectedPage}
+          setShowLogoutOverlay={setShowLogoutOverlay}
         />
       )}
     </div>

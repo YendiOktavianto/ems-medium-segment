@@ -203,9 +203,14 @@ export default function UserInfoContent() {
 
       {/* Modal */}
       {editing && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-2xl p-6 w-[90%] max-w-md text-white shadow-lg">
-            <h3 className="text-lg font-semibold mb-5">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50">
+          <div className="rounded-2xl shadow-2xl p-6 max-w-md w-full text-white"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(0,60,140,1) 0%, rgba(0,30,70,1) 300%)",
+            }}
+          >
+            <h3 className="text-lg font-bold mb-4 text-center">
               {editing === "avatar"
                 ? "Edit Profile Picture"
                 : editing === "phone"
@@ -217,7 +222,7 @@ export default function UserInfoContent() {
 
             {/* avatar */}
             {editing === "avatar" && (
-              <div className="space-y-4 flex flex-col items-center">
+              <div className="space-y-4 flex flex-col items-center mt-10 mb-15">
                 {form.file ? (
                   <div className="relative w-[250px] h-[250px] bg-black">
                     <Cropper
@@ -261,12 +266,13 @@ export default function UserInfoContent() {
 
             {/* phone */}
             {editing === "phone" && (
-              <div>
+              <div className="text-sm">
+                <label className="block mb-1">Phone Number</label>
                 <input
                   type="text"
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className="w-full p-2 rounded-md bg-[#0f1430] border border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 rounded bg-[#123060] text-white"
                 />
                 {errors.phone && (
                   <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
@@ -276,8 +282,9 @@ export default function UserInfoContent() {
 
             {/* password */}
             {editing === "password" && (
-              <div className="space-y-3">
+              <div className="space-y-3 text-sm">
                 <div>
+                  <label className="block mb-1">Old Password</label>
                   <input
                     type="password"
                     placeholder="Old Password"
@@ -285,7 +292,7 @@ export default function UserInfoContent() {
                     onChange={(e) =>
                       setForm({ ...form, oldPassword: e.target.value })
                     }
-                    className="w-full p-2 rounded-md bg-[#0f1430] border border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 rounded bg-[#123060] text-white"
                   />
                   {errors.oldPassword && (
                     <p className="text-red-500 text-xs mt-1">
@@ -294,6 +301,7 @@ export default function UserInfoContent() {
                   )}
                 </div>
                 <div>
+                  <label className="block mb-1">New Password</label>
                   <input
                     type="password"
                     placeholder="New Password"
@@ -301,7 +309,7 @@ export default function UserInfoContent() {
                     onChange={(e) =>
                       setForm({ ...form, newPassword: e.target.value })
                     }
-                    className="w-full p-2 rounded-md bg-[#0f1430] border border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 rounded bg-[#123060] text-white"
                   />
                   {errors.newPassword && (
                     <p className="text-red-500 text-xs mt-1">
@@ -310,6 +318,7 @@ export default function UserInfoContent() {
                   )}
                 </div>
                 <div>
+                  <label className="block mb-1">Confirm Password</label>
                   <input
                     type="password"
                     placeholder="Confirm Password"
@@ -317,7 +326,7 @@ export default function UserInfoContent() {
                     onChange={(e) =>
                       setForm({ ...form, confirmPassword: e.target.value })
                     }
-                    className="w-full p-2 rounded-md bg-[#0f1430] border border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 rounded bg-[#123060] text-white"
                   />
                   {errors.confirmPassword && (
                     <p className="text-red-500 text-xs mt-1">
@@ -374,16 +383,16 @@ export default function UserInfoContent() {
             )}
 
             {/* buttons */}
-            <div className="mt-20 flex justify-end gap-3">
+            <div className="flex justify-end gap-2 mt-12">
               <button
                 onClick={() => setEditing(null)}
-                className="bg-gray-500 hover:bg-gray-600 transition-colors duration-200 px-4 py-2 rounded-full text-sm"
+                className="px-4 py-1 rounded-full bg-gray-500 hover:bg-gray-600 transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="bg-blue-500 hover:bg-blue-600 transition-colors duration-200 px-4 py-2 rounded-full text-sm"
+                className="px-4 py-1 rounded-full bg-blue-500 hover:bg-blue-600 transition"
               >
                 Save
               </button>
