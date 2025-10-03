@@ -1,29 +1,39 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtPayload } from './auth.types';
+import { ConfigService } from '@nestjs/config';
+import * as argon2 from 'argon2';
+
+type TokenPair = { access_token: string; refresh_token: string };
+type UserOut = { userId: string; email: string; username?: string; role?: string };
 
 @Injectable()
 export class AuthService {
   constructor(
     private users: UsersService,
     private jwt: JwtService,
+    private cfg: ConfigService,
   ) {}
 
   private signAccess(sub: string, email: string) {
     return this.jwt.signAsync(
       { sub, email },
-      { secret: process.env.JWT_ACCESS_SECRET, expiresIn: process.env.JWT_ACCESS_EXPIRES || '15m' },
+      {
+        secret: this.cfg.get<string>('JWT_ACCESS_SECRET'),
+        expiresIn: this.cfg.get<string>('JWT_ACCESS_EXPIRES', '15m'),
+      },
     );
   }
+
   private signRefresh(sub: string, email: string) {
     return this.jwt.signAsync(
       { sub, email, typ: 'refresh' },
       {
-        secret: process.env.JWT_REFRESH_SECRET,
-        expiresIn: process.env.JWT_REFRESH_EXPIRES || '7d',
+        secret: this.cfg.get<string>('JWT_REFRESH_SECRET'),
+        expiresIn: this.cfg.get<string>('JWT_REFRESH_EXPIRES', '7d'),
       },
     );
   }
@@ -46,16 +56,31 @@ export class AuthService {
     };
   }
 
-  async login(dto: LoginDto) {
-    const user = await this.users.validateUser(dto.email, dto.password);
-    if (!user) throw new UnauthorizedException('Email or password is incorrect');
+  async login(dto: LoginDto): Promise<{ user: UserOut } & TokenPair> {
+    const { identifier, password } = dto;
+
+    const user = await this.users.findByEmailOrUsername(identifier);
+    if (!user) {
+      throw new UnauthorizedException('Email or password is incorrect');
+    }
+
+    const ok = await argon2.verify(user.password_hash, password);
+    if (!ok) {
+      throw new UnauthorizedException('Email or password is incorrect');
+    }
 
     const [access_token, refresh_token] = await Promise.all([
       this.signAccess(user.userId, user.email),
       this.signRefresh(user.userId, user.email),
     ]);
+
     return {
-      user: { userId: user.userId, email: user.email, username: user.username },
+      user: {
+        userId: user.userId,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+      },
       access_token,
       refresh_token,
     };
@@ -75,19 +100,21 @@ export class AuthService {
     };
   }
 
-  async refresh(token: string) {
-    try {
-      const payload = await this.jwt.verifyAsync<{ sub: string; email: string; typ?: string }>(
-        token,
-        { secret: process.env.JWT_REFRESH_SECRET },
-      );
-      const [access_token, refresh_token] = await Promise.all([
-        this.signAccess(payload.sub, payload.email),
-        this.signRefresh(payload.sub, payload.email),
-      ]);
-      return { access_token, refresh_token };
-    } catch {
-      throw new UnauthorizedException('Refresh token invalid');
+  async refresh(token: string): Promise<TokenPair> {
+    const payload = await this.jwt.verifyAsync<{ sub: string; email: string; typ?: string }>(
+      token,
+      { secret: this.cfg.get<string>('JWT_REFRESH_SECRET') },
+    );
+
+    if (payload?.typ !== 'refresh') {
+      throw new UnauthorizedException('Invalid token type');
     }
+
+    const [access_token, refresh_token] = await Promise.all([
+      this.signAccess(payload.sub, payload.email),
+      this.signRefresh(payload.sub, payload.email),
+    ]);
+
+    return { access_token, refresh_token };
   }
 }
