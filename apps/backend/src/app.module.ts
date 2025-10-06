@@ -9,6 +9,7 @@ import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AuthModule } from './modules/auth/auth.module';
     // fitur
     UsersModule,
     AuthModule,
+    ThrottlerModule.forRoot([{ ttl: 60, limit: 5 }]),
   ],
   controllers: [AppController],
   providers: [
