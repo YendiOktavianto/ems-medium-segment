@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import PhoneInput from "react-phone-input-2";
 
@@ -10,7 +10,7 @@ type FormState = {
   email: string;
   username: string;
   phone_number: string;
-  password_hash: string;
+  password: string;
   confirmPassword: string;
 };
 
@@ -21,7 +21,7 @@ export default function Register() {
     email: "",
     username: "",
     phone_number: "",
-    password_hash: "",
+    password: "",
     confirmPassword: "",
   });
 
@@ -29,9 +29,12 @@ export default function Register() {
     email: "",
     username: "",
     phone_number: "",
-    password_hash: "",
+    password: "",
     confirmPassword: "",
   });
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
 
   // separate state for each password input
   const [showPassword, setShowPassword] = useState(false);
@@ -50,95 +53,175 @@ export default function Register() {
   };
 
   const validateForm = (form: FormState) => {
-    let newErrors: FormState = {
+    const newErrors: FormState = {
       email: "",
       username: "",
       phone_number: "",
-      password_hash: "",
+      password: "",
       confirmPassword: "",
     };
 
-    if (!form.email) newErrors.email = "email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      newErrors.email = "please enter a valid email address";
+  if (!form.email) {
+    newErrors.email = "email is required";
+  } else if (form.email.length > 100) {
+    newErrors.email = "email must not exceed 100 characters";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+    newErrors.email = "please enter a valid email address";
+  } else {
+    // lebih detail sesuai backend
+    const parts = form.email.split("@");
+    if (parts.length !== 2) {
+      newErrors.email = "email must contain one @ character";
+    } else {
+      const [local, domain] = parts;
+      if (!/^[A-Za-z0-9._+~-]+$/.test(local)) {
+        newErrors.email = "email local part contains invalid characters";
+      }
+      const domainRegex =
+        /^(?!-)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\.(?!-)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?))*\.[A-Za-z]{2,}$/;
+      if (!domainRegex.test(domain)) {
+        newErrors.email = "email domain is invalid";
+      }
+    }
+  }
 
-    if (!form.username) newErrors.username = "username is required";
-    else if (form.username.length < 8)
+    // username (frontend samain rules backend tapi error message dipisah)
+    if (!form.username) {
+      newErrors.username = "username is required";
+    } else if (form.username.length < 8) {
       newErrors.username = "username must be at least 8 characters";
-    else if (/\s/.test(form.username))
-      newErrors.username = "username cannot contain spaces";
-    else if (form.username.length > 30)
+    } else if (form.username.length > 30) {
       newErrors.username = "username must be at most 30 characters";
-    else if (!/^[A-Z]/.test(form.password_hash))
-      newErrors.password_hash = "password must start with an uppercase letter";
+    } else if (/\s/.test(form.username)) {
+      newErrors.username = "username cannot contain spaces";
+    } else if (!/^[A-Z]/.test(form.username)) {
+      newErrors.username = "username must start with an uppercase letter";
+    } else if (!/^[A-Z][A-Za-z0-9_.\-@!#$%^&*]+$/.test(form.username)) {
+      newErrors.username =
+        "username can only contain letters, numbers, and special characters . _ - @ ! # $ % ^ & *";
+    }
 
-    if (!form.phone_number) newErrors.phone_number = "phone number is required";
-    else if (form.phone_number.length < 10)
-      newErrors.phone_number = "phone number is too short";
-    else if (form.phone_number.length > 15)
-      newErrors.phone_number = "phone number is too long";
+    if (!form.phone_number) {
+      newErrors.phone_number = "phone number is required";
+    } else if (!/^\+628\d{8,15}$/.test(form.phone_number)) {
+      if (!form.phone_number.startsWith("+628")) {
+        newErrors.phone_number = "phone number must start with +628";
+      } else if (form.phone_number.length < 10) {
+        newErrors.phone_number = "phone number is too short (min 10 chars)";
+      } else if (form.phone_number.length > 16) {
+        newErrors.phone_number = "phone number is too long (max 16 chars)";
+      } else {
+        newErrors.phone_number = "invalid Indonesian phone number format";
+      } 
+    }
 
-    if (!form.password_hash) {
-      newErrors.password_hash = "password is required";
-    } else if (form.password_hash.length < 8) {
-      newErrors.password_hash = "password must be at least 8 characters";
-    } else if (form.password_hash.length > 20) {
-      newErrors.password_hash = "password must be at most 20 characters";
-    } else if (!/[A-Z]/.test(form.password_hash)) {
-      newErrors.password_hash = "password must include at least one uppercase letter";
-    } else if (!/[a-z]/.test(form.password_hash)) {
-      newErrors.password_hash = "password must include at least one lowercase letter";
-    } else if (!/\d/.test(form.password_hash)) {
-      newErrors.password_hash = "password must include at least one number";
-    } else if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(form.password_hash)) {
-      newErrors.password_hash = "password must include at least one special character";
+    // -------- PASSWORD ----------
+    if (!form.password) {
+      newErrors.password = "password is required";
+    } else if (form.password.length < 8) {
+      newErrors.password = "password must be at least 8 characters";
+    } else if (form.password.length > 20) {
+      newErrors.password = "password must be at most 20 characters";
+    } else if (!/[A-Z]/.test(form.password)) {
+      newErrors.password = "password must include at least one uppercase letter";
+    } else if (!/[a-z]/.test(form.password)) {
+      newErrors.password = "password must include at least one lowercase letter";
+    } else if (!/\d/.test(form.password)) {
+      newErrors.password = "password must include at least one number";
+    } else if (!/[^A-Za-z0-9]/.test(form.password)) {
+      newErrors.password = "password must include at least one special character";
+    } else if (/(0123|1234|2345|3456|4567|5678|6789)/.test(form.password)) {
+      newErrors.password = "password must not contain sequential numbers";
+    } else {
+      const lc = form.password.toLowerCase();
+      if (["password", "qwerty", "12345", "123456", "abc123", "tanggal"].some((p) => lc.includes(p))) {
+        newErrors.password = "password must not contain common patterns";
+      }
+      if (/\b(?:\d{2}[-/]?\d{2}[-/]?\d{4}|\d{4}[-/]?\d{2}[-/]?\d{2})\b/.test(form.password)) {
+        newErrors.password = "password must not contain dates";
+      }
     }
 
     if (!form.confirmPassword) newErrors.confirmPassword = "confirm password is required";
-    else if (form.confirmPassword !== form.password_hash)
+    else if (form.confirmPassword !== form.password)
       newErrors.confirmPassword = "confirm password does not match";
 
     return newErrors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const newErrors = validateForm(form);
-    setErrors(newErrors);
+  e.preventDefault();
 
-    if (Object.values(newErrors).every((err) => err === "")) {
-      try {
-        const res = await fetch("http://localhost:3000/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form), // form sudah ada +62
-        });
+  // tambahkan sedikit delay biar PhoneInput sempat update value-nya
+  await new Promise((resolve) => setTimeout(resolve, 50));
 
-        const data = await res.json();
+  const newErrors = validateForm(form);
+  setErrors(newErrors);
 
-        if (!res.ok) {
-          if (data.message?.toLowerCase().includes("username")) {
-            setErrors({ ...errors, username: data.message });
-          } else if (data.message?.toLowerCase().includes("email")) {
-            setErrors({ ...errors, email: data.message });
-          } else {
-            setErrors({ ...errors, password_hash: "registration failed, please try again" });
-          }
+  if (Object.values(newErrors).every((err) => err === "")) {
+    try {
+      const { email, username, phone_number, password } = form;
+      const payload = { email, username, phone_number, password };
+
+      const res = await fetch("http://localhost:4000/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+      console.error("Register failed:", res.status, data);
+      const newErrs = { ...errors };
+
+      // ✅ Tangani format baru dari backend
+      if (data.errors) {
+        if (data.errors.email) newErrs.email = data.errors.email;
+        if (data.errors.username) newErrs.username = data.errors.username;
+        if (data.errors.phone_number) newErrs.phone_number = data.errors.phone_number;
+      } else if (data.message) {
+        // fallback untuk format lama (string atau array)
+        if (Array.isArray(data.message)) {
+          data.message.forEach((msg: string) => {
+            const lower = msg.toLowerCase();
+            if (lower.includes("username")) newErrs.username = msg;
+            if (lower.includes("email")) newErrs.email = msg;
+            if (lower.includes("phone")) newErrs.phone_number = msg;
+          });
         } else {
-          router.push("/login");
+          const msg = data.message.toLowerCase();
+          if (msg.includes("username")) newErrs.username = "username already in use";
+          else if (msg.includes("email")) newErrs.email = "email already in use";
+          else if (msg.includes("phone")) newErrs.phone_number = "phone number already in use";
+          else newErrs.email = data.message;
         }
-      } catch {
-        setErrors({
-          ...errors,
-          email: "server error, please try again later",
-        });
       }
+        setErrors(newErrs);
+        setToastMessage("❌ Registration failed! Please check your inputs.");
+        return; // ⛔ hentikan eksekusi supaya tidak lanjut ke "berhasil"
+      }
+
+      // 🟩 kalau berhasil
+      setToastMessage("✅ Registration successful!");
+      setTimeout(() => router.push("/login"), 1500);
+    } catch (error) {
+      console.error(error);
+      setToastMessage("❌ Server error, please try again later.");
     }
-  };
+  }
+};
 
   const handleLoginRedirect = () => {
     router.push("/login");
   };
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
 
   return (
     <div
@@ -200,19 +283,40 @@ export default function Register() {
               <PhoneInput
                 country={"id"}
                 value={form.phone_number}
-                onChange={(phone) =>
-                  setForm({
-                    ...form,
-                    phone_number: phone.startsWith("+") ? phone : "+" + phone,
-                  })
-                }
+                onChange={(phone) => {
+                  const formatted = phone.startsWith("+") ? phone : "+" + phone;
+
+                  // update langsung ke state form dan hilangkan error
+                  setForm((prev) => ({ ...prev, phone_number: formatted }));
+
+                  // validasi ringan realtime
+                  if (formatted.trim() === "" || formatted.length < 10) {
+                    setErrors((prev) => ({
+                      ...prev,
+                      phone_number: "phone number is required",
+                    }));
+                  } else {
+                    setErrors((prev) => ({ ...prev, phone_number: "" }));
+                  }
+                }}
+                onBlur={() => {
+                  // validasi basic biar tidak required kalau sudah diisi
+                  if (form.phone_number.trim() === "") {
+                    setErrors((prev) => ({
+                      ...prev,
+                      phone_number: "phone number is required",
+                    }));
+                  }
+                }}
                 inputClass="!bg-transparent !outline-none !w-full !placeholder-gray-400 !h-12 !pl-11 !text-sm !text-white"
                 buttonClass="!bg-transparent !border-none !h-12 !ml-[-3px] !outline-none"
                 dropdownClass="!bg-[#282C32] !text-white !hover:bg-black !rounded-sm"
                 placeholder="Phone Number"
               />
             </div>
-            {errors.phone_number && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.phone_number}</p>}
+            {errors.phone_number && (
+              <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.phone_number}</p>
+            )}
           </div>
 
           {/* password */}
@@ -221,9 +325,9 @@ export default function Register() {
               <Image src="/pw.svg" alt="password" width={19} height={20} className="mr-3 opacity-70" />
               <input
                 type={showPassword ? "text" : "password"}
-                name="password_hash"
+                name="password"
                 placeholder="Password"
-                value={form.password_hash}
+                value={form.password}
                 onChange={handleChange}
                 ref={refs.password}
                 className="bg-transparent outline-none w-full placeholder-gray-400 text-[14px]"
@@ -236,7 +340,7 @@ export default function Register() {
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
-            {errors.password_hash && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.password_hash}</p>}
+            {errors.password && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.password}</p>}
           </div>
 
           {/* confirm password */}
@@ -282,6 +386,22 @@ export default function Register() {
           </button>
         </div>
       </div>
+      {/* Toast Notification */}
+{toastMessage && (
+  <div
+    className={`fixed top-6 left-1/2 -translate-x-1/2 px-5 py-2 rounded-lg shadow-lg text-sm animate-fade-in-out z-[9999]
+      ${
+        toastMessage.includes("❌")
+          ? "bg-red-600"
+          : toastMessage.includes("✅")
+          ? "bg-green-600"
+          : "bg-blue-600"
+      } text-white`}
+  >
+    {toastMessage}
+  </div>
+)}
+
     </div>
   );
 }

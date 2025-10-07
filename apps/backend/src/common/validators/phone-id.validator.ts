@@ -11,10 +11,10 @@ export function IsPhoneID(validationOptions?: ValidationOptions) {
       validator: {
         validate(v: any) {
           if (typeof v !== 'string') return false;
-          return /^\+628\d{8,11}$/.test(v); // +628 diikuti 10-13 digit (total 13-16 char)
+          return /^\+628\d{8,15}$/.test(v);
         },
         defaultMessage(args: ValidationArguments) {
-          return `${args.property} must be a valid Indonesian phone number starting with +628 and followed by 6-9 digits (total length 10-13 characters)`;
+          return `${args.property} must be a valid Indonesian phone number starting with +628 and followed by 10-13 digits (total length 13-16 characters)`;
         },
       },
     });

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { FaFileExcel, FaSearch, FaEdit, FaTrash } from "react-icons/fa";
+import { FaFileExcel, FaSearch, FaEdit, FaTrash, FaPlus } from "react-icons/fa";
 
 type DataRow = {
   id: string;
@@ -18,6 +18,9 @@ type DataRow = {
   segment: string;
   active: string; // YES | NO
 };
+
+
+
 
 // dummy data
 const initialData: DataRow[] = Array.from({ length: 50 }, (_, i) => ({
@@ -34,12 +37,41 @@ const initialData: DataRow[] = Array.from({ length: 50 }, (_, i) => ({
   active: i % 2 === 0 ? "YES" : "NO",
 }));
 
+// helper ambil token (optional)
+const getAuthHeaders = (): Record<string, string> => {
+  try {
+    const token =
+      (typeof window !== "undefined" &&
+        localStorage.getItem("access_token")) ||
+      "";
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+};
+
+
 export default function DataTable(): React.JSX.Element {
   const [tableData, setTableData] = useState<DataRow[]>(initialData);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [show, setShow] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [addDeviceModal, setAddDeviceModal] = useState(false);
+
+  const [newDevice, setNewDevice] = useState<DataRow>({
+    id: "",
+    serial_number: "",
+    username: "",
+    wattage: "",
+    phase: "",
+    address_name: "",
+    detail_address_name: "",
+    long: NaN,
+    lat: NaN,
+    segment: "",
+    active: "YES",
+  });
 
   // confirm delete
   const [confirmDelete, setConfirmDelete] = useState<DataRow | null>(null);
@@ -134,15 +166,194 @@ export default function DataTable(): React.JSX.Element {
     setConfirmDelete(null);
   };
 
-  // simpan edit
-  const handleSaveEdit = () => {
-    if (editRow) {
-      setTableData((prev) =>
-        prev.map((item) => (item.id === editRow.id ? editRow : item))
-      );
-      setEditRow(null);
+  //HANDLE EDIT DEVICE
+  const handleSaveEdit = async () => {
+    try {
+      if (editRow) {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/devices/${editRow.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+          },
+          body: JSON.stringify(editRow),
+        });
+
+        if (!res.ok) throw new Error("Failed to update device");
+
+        setTableData((prev) =>
+          prev.map((item) => (item.id === editRow.id ? editRow : item))
+        );
+        setEditRow(null);
+        setToastMessage("✅ Device updated successfully!");
+      }
+    } catch (err) {
+      console.error(err);
+      setToastMessage("❌ Failed to update device!");
     }
   };
+
+  //HANDLE ADD DEVICE
+  const handleAddDevice = async () => {
+    const newErrors: Partial<Record<keyof DataRow, string>> = {};
+
+    // --- Serial Number ---
+    if (!newDevice.serial_number)
+      newErrors.serial_number = "Serial number is required!";
+    else if (newDevice.serial_number.length < 5)
+      newErrors.serial_number = "Serial number must be at least 5 characters long!";
+    else if (newDevice.serial_number.length > 30)
+      newErrors.serial_number = "Serial number cannot exceed 30 characters!";
+    else if (!/^[A-Za-z0-9.\-_]+$/.test(newDevice.serial_number))
+      newErrors.serial_number = "Serial number can only contain letters, numbers, dots, hyphens, and underscores.";
+
+    // --- Username (Owner) ---
+    if (!newDevice.username)
+      newErrors.username = "Owner (Username) is required!";
+    else if (newDevice.username.length < 8) {
+      newErrors.username = "username must be at least 8 characters";
+    } else if (newDevice.username.length > 30) {
+      newErrors.username = "username must be at most 30 characters";
+    } else if (/\s/.test(newDevice.username)) {
+      newErrors.username = "username cannot contain spaces";
+    } else if (!/^[A-Z]/.test(newDevice.username)) {
+      newErrors.username = "username must start with an uppercase letter";
+    } else if (!/^[A-Z][A-Za-z0-9_.\-@!#$%^&*]+$/.test(newDevice.username)) {
+      newErrors.username =
+        "username can only contain letters, numbers, and special characters . _ - @ ! # $ % ^ & *";
+    }
+
+    // --- Wattage ---
+    if (!newDevice.wattage)
+      newErrors.wattage = "Wattage is required!";
+    else if (!/^[0-9]{3,5}VA$/i.test(newDevice.wattage))
+      newErrors.wattage = "Wattage format must be like '2200VA' or '900VA'.";
+
+    // --- Phase ---
+    if (!newDevice.phase)
+      newErrors.phase = "Phase is required!";
+    else if (!["1-phase", "2-phase", "3-phase"].includes(newDevice.phase.toLowerCase()))
+      newErrors.phase = "Phase must be one of: 1-phase, 2-phase, or 3-phase.";
+
+    // --- Address Name ---
+    if (!newDevice.address_name)
+      newErrors.address_name = "Address name is required!";
+    else if (newDevice.address_name.length < 3)
+      newErrors.address_name = "Address name must be at least 3 characters!";
+    else if (newDevice.address_name.length > 50)
+      newErrors.address_name = "Address name cannot exceed 50 characters!";
+
+    // --- Detail Address Name ---
+    if (!newDevice.detail_address_name)
+      newErrors.detail_address_name = "Detail address is required!";
+    else if (newDevice.detail_address_name.length < 3)
+      newErrors.detail_address_name = "Detail address must be at least 3 characters!";
+    else if (newDevice.detail_address_name.length > 50)
+      newErrors.detail_address_name = "Detail address cannot exceed 50 characters!";
+
+    // --- Latitude ---
+    if (Number.isNaN(newDevice.lat))
+      newErrors.lat = "Latitude is required!";
+    else if (newDevice.lat < -90 || newDevice.lat > 90)
+      newErrors.lat = "Latitude must be between -90 and 90!";
+
+    // --- Longitude ---
+    if (Number.isNaN(newDevice.long))
+      newErrors.long = "Longitude is required!";
+    else if (newDevice.long < -180 || newDevice.long > 180)
+      newErrors.long = "Longitude must be between -180 and 180!";
+
+    // --- Segment ---
+    if (!newDevice.segment)
+      newErrors.segment = "Segment is required!";
+    else if (newDevice.segment.length < 3)
+      newErrors.segment = "Segment must be at least 3 characters!";
+    else if (newDevice.segment.length > 30)
+      newErrors.segment = "Segment cannot exceed 30 characters!";
+    else if (!/^[A-Za-z\s]+$/.test(newDevice.segment))
+      newErrors.segment = "Segment can only contain letters and spaces.";
+
+    // validasi angka (lat & long)
+    if (Number.isNaN(newDevice.lat)) {
+      newErrors.lat = "Latitude is required!";
+    } else if (newDevice.lat < -90 || newDevice.lat > 90) {
+      newErrors.lat = "Latitude must be between -90 and 90!";
+    }
+
+    if (Number.isNaN(newDevice.long)) {
+      newErrors.long = "Longitude is required!";
+    } else if (newDevice.long < -180 || newDevice.long > 180) {
+      newErrors.long = "Latitude must be between -180 and 180!";
+    }
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+
+    // payload aman untuk backend decimal
+    const payload = {
+      ...newDevice,
+      lat: Number(newDevice.lat),
+      long: Number(newDevice.long),
+    };
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/devices`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Failed to add device");
+
+      const data = await res.json();
+      setTableData([...tableData, data]);
+      setAddDeviceModal(false);
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred while adding the device");
+    }
+  };
+
+  const [errors, setErrors] = useState<Partial<Record<keyof DataRow, string>>>({});
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedData = localStorage.getItem("prefillDeviceData");
+    if (storedData) {
+      const request = JSON.parse(storedData);
+
+      // Prefill data form
+      setNewDevice((prev) => ({
+        ...prev,
+        username: request.username || "",
+        address_name: request.address || "",
+        detail_address_name: request.detail_address || "",
+        lat: request.lat ?? NaN,
+        long: request.lng ?? NaN,
+        segment: request.segmen || "",
+        active: "YES",
+      }));
+
+      // Buka modal Add Device
+      setAddDeviceModal(true);
+
+      // Tampilkan toast sukses
+      setToastMessage("✅ Prefilled request data loaded successfully!");
+
+      // Hapus localStorage agar tidak berulang
+      localStorage.removeItem("prefillDeviceData");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
 
   return (
     <div
@@ -157,13 +368,21 @@ export default function DataTable(): React.JSX.Element {
         <h1 className="text-xl md:text-2xl font-bold text-white">
           Device Management
         </h1>
-        <button
-          onClick={exportXLS}
-          className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-full text-white text-xs transition"
-        >
-          <FaFileExcel className="text-white text-sm" />
-          Export XLS
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setAddDeviceModal(true)}
+            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-full text-white text-xs transition"
+          >
+            <FaPlus /> Add Device
+          </button>
+          <button
+            onClick={exportXLS}
+            className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-full text-white text-xs transition"
+          >
+            <FaFileExcel className="text-white text-sm" />
+            Export XLS
+          </button>
+        </div>
       </div>
 
       {/* Controls */}
@@ -322,7 +541,7 @@ export default function DataTable(): React.JSX.Element {
       {confirmDelete && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50">
           <div className="bg-gray-800 rounded-xl shadow-2xl p-6 max-w-sm w-full text-white">
-            <h2 className="text-lg font-bold mb-2">Konfirmasi Hapus</h2>
+            <h2 className="text-lg font-bold mb-2">Delete Confirmation</h2>
             <p className="text-sm mb-8">
               Are you sure want to delete{" "}
               <b>{confirmDelete.serial_number} {" DEVICE"}</b>{" with owner "} <b>{confirmDelete.username}</b> {" ?"} 
@@ -332,13 +551,13 @@ export default function DataTable(): React.JSX.Element {
                 onClick={() => setConfirmDelete(null)}
                 className="px-6 py-1 rounded bg-gray-500 hover:bg-gray-600 transition"
               >
-                Batal
+                Cancel
               </button>
               <button
                 onClick={() => handleDelete(confirmDelete)}
                 className="px-5 py-1 rounded bg-red-600 hover:bg-red-700 transition"
               >
-                Hapus
+                Delete
               </button>
             </div>
           </div>
@@ -433,6 +652,195 @@ export default function DataTable(): React.JSX.Element {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/*============== ADD DEVICE MODAL ==============*/}
+      {addDeviceModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50">
+          <div
+            className="rounded-2xl shadow-2xl p-6 max-w-md w-full text-white overflow-y-auto max-h-[94vh] custom-scroll"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(0,60,140,1) 0%, rgba(0,30,70,1) 300%)",
+            }}
+        >
+            <h2 className="text-lg font-bold mb-4 text-center">Add Device</h2>
+
+            <div className="flex flex-col gap-2 text-sm">
+              <div>
+                <label className="block mb-1">Serial Number</label>
+                <input
+                  type="text"
+                  value={newDevice.serial_number}
+                  onChange={(e) =>
+                    setNewDevice({ ...newDevice, serial_number: e.target.value })
+                  }
+                  className={`w-full p-2 rounded bg-[#123060] text-white ${
+                    errors.serial_number ? "border border-red-500" : ""
+                  }`}
+                />
+                {errors.serial_number && (
+                  <p className="text-red-400 text-xs mt-1">{errors.serial_number}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block mb-1">Username (Owner)</label>
+                <input
+                  type="text"
+                  value={newDevice.username}
+                  onChange={(e) =>
+                    setNewDevice({ ...newDevice, username: e.target.value })
+                  }
+                  className={`w-full p-2 rounded bg-[#123060] text-white ${
+                    errors.username ? "border border-red-500" : ""
+                  }`}
+                />
+                {errors.username && (
+                  <p className="text-red-400 text-xs mt-1">{errors.username}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block mb-1">Address Name</label>
+                <input
+                  type="text"
+                  value={newDevice.address_name}
+                  onChange={(e) =>
+                    setNewDevice({ ...newDevice, address_name: e.target.value })
+                  }
+                  className={`w-full p-2 rounded bg-[#123060] text-white ${
+                    errors.address_name ? "border border-red-500" : ""
+                  }`}
+                />
+                {errors.address_name && (
+                  <p className="text-red-400 text-xs mt-1">{errors.address_name}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block mb-1">Detail Address Name</label>
+                <input
+                  type="text"
+                  value={newDevice.detail_address_name}
+                  onChange={(e) =>
+                    setNewDevice({
+                      ...newDevice,
+                      detail_address_name: e.target.value,
+                    })
+                  }
+                  className={`w-full p-2 rounded bg-[#123060] text-white ${
+                    errors.detail_address_name ? "border border-red-500" : ""
+                  }`}
+                />
+                {errors.detail_address_name && (
+                  <p className="text-red-400 text-xs mt-1">{errors.detail_address_name}</p>
+                )}
+              </div>
+              <div>
+                <label className="block mb-1">Latitude</label>
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="-6.2221431"
+                  value={Number.isNaN(newDevice.lat) ? "" : newDevice.lat}
+                  onChange={(e) =>
+                    setNewDevice({
+                      ...newDevice,
+                      lat: parseFloat(e.target.value),
+                    })
+                  }
+                  className={`w-full p-2 rounded bg-[#123060] text-white ${
+                    errors.lat ? "border border-red-500" : ""
+                  }`}
+                />
+                {errors.lat && <p className="text-red-400 text-xs mt-1 ">{errors.lat}</p>}
+              </div>
+              <div>
+                <label className="block mb-1">Longitude</label>
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="106.9179941"
+                  value={Number.isNaN(newDevice.long) ? "" : newDevice.long}
+                  onChange={(e) =>
+                    setNewDevice({
+                      ...newDevice,
+                      long: e.target.value === "" ? NaN : parseFloat(e.target.value),
+                    })
+                  }
+                  className={`w-full p-2 rounded bg-[#123060] text-white ${
+                    errors.long ? "border border-red-500" : ""
+                  }`}
+                />
+                {errors.long && (
+                  <p className="text-red-400 text-xs mt-1">{errors.long}</p>
+                )}
+              </div>
+              <div>
+                <label className="block mb-1">Segment</label>
+                <input
+                  type="text"
+                  value={newDevice.segment}
+                  onChange={(e) =>
+                    setNewDevice({ ...newDevice, segment: e.target.value })
+                  }
+                  className={`w-full p-2 rounded bg-[#123060] text-white ${
+                    errors.segment ? "border border-red-500" : ""
+                  }`}
+                />
+                {errors.segment && (
+                  <p className="text-red-400 text-xs mt-1">{errors.segment}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-10">
+              <button
+                onClick={() => {
+                  setAddDeviceModal(false);
+                  setNewDevice({
+                    id: "",
+                    serial_number: "",
+                    username: "",
+                    wattage: "",
+                    phase: "",
+                    address_name: "",
+                    detail_address_name: "",
+                    long: 0,
+                    lat: 0,
+                    segment: "",
+                    active: "YES",
+                  });
+                  setErrors({});
+                }}
+                className="px-4 py-1 rounded-full bg-gray-500 hover:bg-gray-600 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddDevice}
+                className="px-4 py-1 rounded-full bg-blue-500 hover:bg-blue-600 transition"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          className={`fixed top-6 left-1/2 -translate-x-1/2 px-5 py-2 rounded-lg shadow-lg text-sm animate-fade-in-out z-[9999] ${
+            toastMessage.includes("❌")
+              ? "bg-red-600"
+              : toastMessage.includes("✅")
+              ? "bg-green-600"
+              : "bg-blue-600"
+          } text-white`}
+        >
+          {toastMessage}
         </div>
       )}
     </div>

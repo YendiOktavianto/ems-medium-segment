@@ -29,9 +29,6 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto) {
-    if (dto.password !== dto.confirm_password) {
-      throw new BadRequestException('Password Confirmation does not match');
-    }
     const user = await this.users.createUser({
       email: dto.email,
       username: dto.username,
