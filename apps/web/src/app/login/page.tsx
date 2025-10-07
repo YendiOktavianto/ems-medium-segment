@@ -54,9 +54,9 @@ export default function LoginUI() {
               <Image src="/pw.svg" alt="password" width={19} height={20} className="mr-3 opacity-70" />
               <input
                 type={showPassword ? "text" : "password"}
-                name="password_hash"
+                name="password"
                 placeholder="Password"
-                value={form.password_hash}
+                value={form.password}
                 onChange={handleChange}
                 className="bg-transparent outline-none w-full placeholder-gray-400 text-[14px]"
               />
@@ -68,7 +68,7 @@ export default function LoginUI() {
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
-            {errors.password_hash && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.password_hash}</p>}
+            {errors.password && <p className="text-red-400 text-[11px] mt-1 ml-4">{errors.password}</p>}
           </div>
 
           {/* remember me & forgot password */}

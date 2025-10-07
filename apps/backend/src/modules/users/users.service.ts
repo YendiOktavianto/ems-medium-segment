@@ -25,14 +25,26 @@ export class UsersService {
   }
 
   async createUser(params: CreateUserParams) {
-    const exists = await this.repo.findOne({
-      where: [
-        { email: params.email },
-        { username: params.username },
-        { phone_number: params.phone_number },
-      ],
-    });
-    if (exists) throw new ConflictException('Email/Username/Phone already in use');
+    const email = params.email.trim().toLowerCase();
+    const username = params.username.trim();
+    const phone = params.phone_number.trim();
+
+    // cek unik per kolom (paralel)
+    const [emailUser, usernameUser, phoneUser] = await Promise.all([
+      this.repo.findOne({ where: { email: ILike(email) } }),
+      this.repo.findOne({ where: { username: ILike(username) } }),
+      this.repo.findOne({ where: { phone_number: phone } }),
+    ]);
+
+    const errors: Record<string, string> = {};
+    if (emailUser) errors.email = 'Email already in use';
+    if (usernameUser) errors.username = 'Username already taken';
+    if (phoneUser) errors.phone_number = 'Phone Number already in use';
+
+    if (Object.keys(errors).length) {
+      // 409 + payload berisi error per-field
+      throw new ConflictException({ message: 'Duplicate fields', errors });
+    }
 
     const password_hash = await argon2.hash(params.password);
     const user = this.repo.create({

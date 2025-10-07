@@ -61,12 +61,12 @@ export class AuthService {
 
     const user = await this.users.findByEmailOrUsername(identifier);
     if (!user) {
-      throw new UnauthorizedException('Email or password is incorrect');
+      throw new UnauthorizedException('Email is incorrect');
     }
 
     const ok = await argon2.verify(user.password_hash, password);
     if (!ok) {
-      throw new UnauthorizedException('Email or password is incorrect');
+      throw new UnauthorizedException('Password is incorrect');
     }
 
     const [access_token, refresh_token] = await Promise.all([

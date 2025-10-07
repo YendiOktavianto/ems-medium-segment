@@ -18,7 +18,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
         secret: cfg.get<string>('JWT_ACCESS_SECRET'),
         signOptions: { expiresIn: cfg.get<string>('JWT_ACCESS_EXPIRES', '15m') },
       }),
-    }), // secret & expires dihandle di service per token type
+    }),
   ],
   providers: [AuthService, JwtStrategy, JwtAuthGuard],
   controllers: [AuthController],

@@ -120,13 +120,30 @@ export default function Register() {
 
         if (!res.ok) {
           console.error("Register failed:", res.status, data);
-          if (data.message?.toLowerCase().includes("username")) {
-            setErrors({ ...errors, username: data.message });
-          } else if (data.message?.toLowerCase().includes("email")) {
-            setErrors({ ...errors, email: data.message });
-          } else {
-            setErrors({ ...errors, password: "registration failed, please try again" });
-          }
+          const serverErrors = { ...newErrors };
+          if (data?.errors && typeof data.errors === "object") {
+          if (data.errors.email) serverErrors.email = data.errors.email;
+          if (data.errors.username) serverErrors.username = data.errors.username;
+          if (data.errors.phone_number) serverErrors.phone_number = data.errors.phone_number;
+        }
+
+        if (typeof data?.message === "string") {
+          const msg = data.message.toLowerCase();
+          if (msg.includes("email")) serverErrors.email ||= data.message;
+          if (msg.includes("username")) serverErrors.username ||= data.message;
+          if (msg.includes("phone")) serverErrors.phone_number ||= data.message;
+        }
+
+        if (
+          !serverErrors.email &&
+          !serverErrors.username &&
+          !serverErrors.phone_number
+        ) {
+          serverErrors.password = "registration failed, please try again";
+        }
+
+      setErrors(serverErrors);
+      return;
         } else {
           router.push("/login");
         }
