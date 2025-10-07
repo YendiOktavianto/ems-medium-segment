@@ -126,7 +126,7 @@ select:-webkit-autofill,
 select:-webkit-autofill:hover,
 select:-webkit-autofill:focus {
   /* ganti sesuai warna input kamu */
-  -webkit-box-shadow: 0 0 0px 1000px rgba(58, 58, 58, 0) inset !important;
+  -webkit-box-shadow: 0 0 0 1000px #1f2937 inset !important;
   box-shadow: 0 0 0px 1000px rgba(58, 58, 58, 0) inset !important;
 
   /* warna teks autofill */
@@ -258,3 +258,32 @@ textarea,
   caret-color: #fff; 
 }
 
+.gm-ui-hover-effect {
+  display: none !important;
+}
+
+.gm-style .gm-style-iw-c {
+  border: none !important;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-10px); }
+  10% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+
+.animate-fade-in-out {
+  animation: fadeInOut 3s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-10px); }
+  10% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+
+.animate-fade-in-out {
+  animation: fadeInOut 3s ease-in-out;
+}

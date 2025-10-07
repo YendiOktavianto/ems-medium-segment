@@ -2,9 +2,11 @@
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, Circle } from "lucide-react";
+import { flushSync } from "react-dom";
 
 export default function Sidebar({
   selectedPage,
+  setLoading,
   setSelectedPage,
   setShowLogoutOverlay,
 }: any) {
@@ -41,7 +43,6 @@ export default function Sidebar({
     if (!pathname) return;
 
     if (pathname.startsWith("/dashboard/power-monitoring/")) {
-      // contoh: /dashboard/power-monitoring/voltage → Voltage
       const part = pathname.split("/").pop() || "";
       const name = part
         .replace(/-/g, " ")
@@ -111,31 +112,34 @@ export default function Sidebar({
     },
   ];
 
-  const handleClick = (key: string, path?: string) => {
+  const handleClick = async (key: string, path?: string) => {
     setSelectedPage(key);
     if (key === "Logout") {
       setShowLogoutOverlay(true);
     } else if (path) {
+      flushSync(() => {
+        setLoading(true); // langsung render overlay tanpa delay React
+      });
       router.push(path);
     }
   };
 
   return (
     <aside
-      className="w-65 flex flex-col p-4 rounded-t-2xl mt-4 ml-4 h-screen fixed"
+      className="w-64 flex flex-col p-3 rounded-t-2xl mt-4 ml-4 h-screen fixed select-none"
       style={{
         background:
           "linear-gradient(100deg, rgba(6,11,40,1) 0%, rgba(26,31,55,0) 100%)",
       }}
     >
       {/* Logo */}
-      <h1 className="flex items-center gap-2 text-lg font-bold text-white">
-        <img src="/logo2.svg" alt="logo" className="h-10" />
+      <h1 className="flex items-center gap-2 text-base font-bold text-white mb-1">
+        <img src="/logo2.svg" alt="logo" className="h-9" />
       </h1>
-      <img src="/line.svg" alt="line" className="w-67 h-8" />
+      <img src="/line.svg" alt="line" className="w-60 h-6 mb-2" />
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto flex flex-col text-xs custom-scroll">
+      <nav className="flex-1 overflow-hidden flex flex-col text-[11px] leading-tight">
         {/* MAIN MENU */}
         {menus.map((item) => {
           const isActive = selectedPage === item.key;
@@ -147,7 +151,7 @@ export default function Sidebar({
                 setIsPowerOpen(false);
                 setIsReportOpen(false);
               }}
-              className={`flex items-center gap-4 px-3 py-2 rounded-lg cursor-pointer transition-colors duration-200 ${
+              className={`flex items-center gap-3 px-3 py-1.5 rounded-lg cursor-pointer transition-colors duration-200 ${
                 isActive
                   ? "bg-[#1A1F37] text-white font-medium"
                   : "text-gray-300 hover:text-white hover:bg-[#1A1F37]"
@@ -156,7 +160,7 @@ export default function Sidebar({
               <img
                 src={isActive ? item.activeIcon : item.icon}
                 alt={item.label}
-                className="w-6 h-6"
+                className="w-5 h-5"
               />
               <span>{item.label}</span>
             </a>
@@ -165,29 +169,29 @@ export default function Sidebar({
 
         {/* POWER MONITORING */}
         <div
-          className={`rounded-lg ${
-            isPowerOpen ? "bg-[#141830]" : "bg-transparent"
+          className={`rounded-lg mt-1 ${
+            isPowerOpen || selectedPage === "Power Monitoring" || powerMenus.includes(selectedPage)
+            ? "bg-[#141830]" 
+            : "bg-transparent"
           }`}
         >
-          <button
-            onClick={() => {
-              // klik sekali langsung buka + navigate
-              if (!isPowerOpen) setIsPowerOpen(true);
-              setSelectedPage("Power Monitoring");
-              router.push("/dashboard/power-monitoring");
-            }}
-            className="flex w-full items-center justify-between px-3 py-2 cursor-pointer hover:bg-[#1A1F37] rounded-lg"
-          >
-            <div className="flex items-center gap-4">
+          <div className="flex w-full items-center justify-between px-3 py-1.5 cursor-pointer hover:bg-[#1A1F37] rounded-lg">
+            {/* Klik kiri = navigate */}
+            <div
+              className="flex items-center gap-3 flex-1"
+              onClick={() => {
+                setSelectedPage("Power Monitoring");
+                router.push("/dashboard/power-monitoring");
+              }}
+            >
               <img
                 src={
-                  selectedPage === "Power Monitoring" ||
-                  powerMenus.includes(selectedPage)
+                  selectedPage === "Power Monitoring" || isPowerOpen
                     ? "/power_monitoring_active.svg"
                     : "/power-monitoring.svg"
                 }
                 alt="Power Monitoring"
-                className="w-6 h-6"
+                className="w-5 h-5"
               />
               <span
                 className={
@@ -200,15 +204,25 @@ export default function Sidebar({
                 Power Monitoring
               </span>
             </div>
-            {isPowerOpen ? (
-              <ChevronUp size={14} className="text-gray-300" />
-            ) : (
-              <ChevronDown size={14} className="text-gray-300" />
-            )}
-          </button>
+
+            {/* Klik kanan (Chevron) = toggle submenu */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsPowerOpen(!isPowerOpen);
+              }}
+            >
+              {isPowerOpen ? (
+                <ChevronUp size={12} className="text-gray-300" />
+              ) : (
+                <ChevronDown size={12} className="text-gray-300" />
+              )}
+            </button>
+          </div>
+
           {isPowerOpen && (
-            <div className=" bg-[#0d1225]/70 rounded-md border border-gray-700/50 py-2">
-              <div className="flex flex-col space-y-1">
+            <div className=" bg-[#0d1225]/70 rounded-md border border-gray-700/50 py-1.5">
+              <div className="flex flex-col space-y-0.5">
                 {powerMenus.map((sub) => {
                   const activeSub = selectedPage === sub;
                   return (
@@ -222,15 +236,15 @@ export default function Sidebar({
                             .replace(/ /g, "-")}`
                         )
                       }
-                      className={`relative flex items-center gap-2 pl-12 pr-3 py-2 rounded-md transition-colors duration-150 group ${
+                      className={`relative flex items-center gap-2 pl-10 pr-2 py-1.5 rounded-md transition-colors duration-150 group ${
                         activeSub
                           ? "text-blue-400 font-medium bg-[#1A1F37]"
                           : "text-gray-400 hover:text-blue-400 hover:bg-[#1A1F37]/70"
                       }`}
                     >
                       <Circle
-                        size={6}
-                        className={`absolute left-8 ${
+                        size={5}
+                        className={`absolute left-7 ${
                           activeSub
                             ? "text-blue-400"
                             : "text-gray-500 group-hover:text-blue-400"
@@ -239,7 +253,7 @@ export default function Sidebar({
                       />
                       <span>{sub}</span>
                       {activeSub && (
-                        <span className="absolute left-0 top-0 h-full w-1 bg-blue-400 rounded-r"></span>
+                        <span className="absolute left-0 top-0 h-full w-0.5 bg-blue-400 rounded-r"></span>
                       )}
                     </a>
                   );
@@ -249,27 +263,25 @@ export default function Sidebar({
           )}
         </div>
 
-        {/* REPORT (tetap default toggle) */}
+        {/* REPORT */}
         <div
-          className={`rounded-lg mt-2 ${
+          className={`rounded-lg mt-1 ${
             isReportOpen ? "bg-[#141830]" : "bg-transparent"
           }`}
         >
           <button
             onClick={() => setIsReportOpen(!isReportOpen)}
-            className="flex w-full items-center justify-between px-3 py-2 cursor-pointer hover:bg-[#1A1F37] rounded-lg"
+            className="flex w-full items-center justify-between px-3 py-1.5 cursor-pointer hover:bg-[#1A1F37] rounded-lg"
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <img
                 src={
-                  selectedPage === "Report" ||
-                  selectedPage === "Summary Report" ||
-                  selectedPage === "Energy Usage Report"
+                  selectedPage === "Report" || isReportOpen
                     ? "/report_active.svg"
                     : "/report.svg"
                 }
                 alt="Report"
-                className="w-6 h-6"
+                className="w-5 h-5"
               />
               <span
                 className={
@@ -284,29 +296,29 @@ export default function Sidebar({
               </span>
             </div>
             {isReportOpen ? (
-              <ChevronUp size={14} className="text-gray-300" />
+              <ChevronUp size={12} className="text-gray-300" />
             ) : (
-              <ChevronDown size={14} className="text-gray-300" />
+              <ChevronDown size={12} className="text-gray-300" />
             )}
           </button>
           {isReportOpen && (
-            <div className="bg-[#0d1225]/70 rounded-md border border-gray-700/50 py-2">
-              <div className="flex flex-col space-y-1">
+            <div className="bg-[#0d1225]/70 rounded-md border border-gray-700/50 py-1.5">
+              <div className="flex flex-col space-y-0.5">
                 {reportMenus.map((rep) => {
                   const activeSub = selectedPage === rep.key;
                   return (
                     <a
                       key={rep.key}
                       onClick={() => handleClick(rep.key, rep.path)}
-                      className={`relative flex items-center gap-2 pl-12 pr-3 py-2 rounded-md transition-colors duration-150 group ${
+                      className={`relative flex items-center gap-2 pl-10 pr-2 py-1.5 rounded-md transition-colors duration-150 group ${
                         activeSub
                           ? "text-blue-400 font-medium bg-[#1A1F37]"
                           : "text-gray-400 hover:text-blue-400 hover:bg-[#1A1F37]/70"
                       }`}
                     >
                       <Circle
-                        size={6}
-                        className={`absolute left-8 ${
+                        size={5}
+                        className={`absolute left-7 ${
                           activeSub
                             ? "text-blue-400"
                             : "text-gray-500 group-hover:text-blue-400"
@@ -315,7 +327,7 @@ export default function Sidebar({
                       />
                       <span>{rep.label}</span>
                       {activeSub && (
-                        <span className="absolute left-0 top-0 h-full w-1 bg-blue-400 rounded-r"></span>
+                        <span className="absolute left-0 top-0 h-full w-0.5 bg-blue-400 rounded-r"></span>
                       )}
                     </a>
                   );
@@ -332,16 +344,16 @@ export default function Sidebar({
             setIsPowerOpen(false);
             setIsReportOpen(false);
           }}
-          className={`flex items-center gap-4 px-3 py-2 rounded-lg cursor-pointer hover:bg-[#1A1F37] transition-colors duration-200 text-xs ${
+          className={`flex items-center gap-3 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-[#1A1F37] transition-colors duration-200 ${
             selectedPage === "Logout"
               ? "bg-[#1A1F37] text-white font-medium"
-              : "text-gray-300 hover:text-white "
+              : "text-gray-300 hover:text-white"
           }`}
         >
           <img
             src={selectedPage === "Logout" ? "/exit_active.svg" : "/exit.svg"}
             alt="Logout"
-            className="w-5 h-5"
+            className="w-4 h-4"
           />
           <span>Logout</span>
         </a>
