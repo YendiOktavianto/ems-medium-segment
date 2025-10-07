@@ -1,40 +1,85 @@
 "use client";
 
-import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, Marker, InfoWindow, useJsApiLoader } from "@react-google-maps/api";
 import { useState, useCallback } from "react";
+import { useSiteMonitoring } from "./useSiteMonitoring";
 
-const locations = [
-  { id: 1, lat: -7.331877, lng: 110.492196, address_name: "Lokasi 1", isActive: true },
-  { id: 2, lat: -7.3335, lng: 110.4872, address_name: "Lokasi 2", isActive: false },
-  { id: 3, lat: -7.329, lng: 110.495, address_name: "Lokasi 3", isActive: true },
-];
-
-const getCenter = (locs: typeof locations) => {
-  const lats = locs.map((l) => l.lat);
-  const lngs = locs.map((l) => l.lng);
-  return {
-    lat: (Math.min(...lats) + Math.max(...lats)) / 2,
-    lng: (Math.min(...lngs) + Math.max(...lngs)) / 2,
-  };
-};
-
-const containerStyle = { width: "100%", height: "516px" };
-
-export default function HomePage() {
+export default function SiteMonitoring() {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
   });
 
-  // simpan center sekali saja
-  const [center] = useState(getCenter(locations));
-  const [zoom, setZoom] = useState(15);
+  type Location = {
+    id: string;
+    lat: number;
+    lng: number;
+    address_name: string;
+    detail_address?: string;
+    device_id?: string;
+    segment?: string;
+    isActive: boolean;
+  };
 
-  const onLoad = useCallback((map: google.maps.Map) => {
-    setZoom(map.getZoom() || 15);
-    map.addListener("zoom_changed", () => {
-      setZoom(map.getZoom() || 15);
-    });
-  }, []);
+  const userId = "123";
+  const token = "user-jwt-token";
+
+  const { locations: fetchedLocations } = useSiteMonitoring(userId, token);
+  const [zoom, setZoom] = useState(15);
+  const [hovered, setHovered] = useState<any>(null);
+
+  // default center Jakarta
+  const defaultCenter = { lat: -6.2221431, lng: 106.9179941 };
+
+  // fallback locations jika kosong
+  const locations =
+    fetchedLocations && fetchedLocations.length > 0
+      ? fetchedLocations
+      : [
+          {
+            id: "default-1",
+            lat: -7.304446483292537,
+            lng: 110.48842948121239,
+            address_name: "jl.soka sari no 17 rt 10/ rw 07 sidorejo, sidorejoLor, salatiga, jawa tengah",
+            detail_address: "",
+            device_id: "",
+            segment: "",
+            isActive: false,
+          },
+          {
+            id: "default-2",
+            lat: -7.324446483292537,
+            lng: 110.48842948121239,
+            address_name: "(Default Location 2)",
+            detail_address: "Jl. Contoh No. 123",
+            device_id: "DEV-002",
+            segment: "Residential",
+            isActive: true,
+          },
+        ];
+
+  const onLoad = useCallback(
+    (map: google.maps.Map) => {
+      if (locations.length > 1) {
+        const bounds = new google.maps.LatLngBounds();
+        locations.forEach((loc) => {
+          bounds.extend({ lat: loc.lat, lng: loc.lng });
+        });
+        map.fitBounds(bounds);
+      } else if (locations.length === 1) {
+        const single = locations[0];
+        map.setCenter({ lat: single.lat, lng: single.lng });
+        map.setZoom(14);
+      } else {
+        map.setCenter(defaultCenter);
+        map.setZoom(10);
+      }
+
+      map.addListener("zoom_changed", () => {
+        setZoom(map.getZoom() || 15);
+      });
+    },
+    [locations]
+  );
 
   if (!isLoaded) {
     return <div className="text-white text-center mt-10">Loading Maps...</div>;
@@ -48,10 +93,12 @@ export default function HomePage() {
           "linear-gradient(90deg, rgba(6,11,40,0.74) 0%, rgba(10,14,35,0.71) 100%)",
       }}
     >
-      <div className="w-full h-full shadow-lg overflow-hidden">
+      <div
+        className="w-full h-full shadow-lg overflow-hidden"
+        style={{ height: "86.5vh" }}
+      >
         <GoogleMap
-          mapContainerStyle={containerStyle}
-          center={center}
+          mapContainerStyle={{ width: "76vw", height: "100%" }}
           zoom={zoom}
           onLoad={onLoad}
         >
@@ -59,13 +106,41 @@ export default function HomePage() {
             <Marker
               key={loc.id}
               position={{ lat: loc.lat, lng: loc.lng }}
-              title={loc.address_name}
+              // Hover → tampilkan InfoWindow
+              onMouseOver={() => setHovered(loc)}
+              onMouseOut={() => setHovered(null)}
               icon={{
                 url: loc.isActive ? "/active.svg" : "/nonactive.svg",
-                scaledSize: new google.maps.Size(zoom * 4, zoom * 4),
-                anchor: new google.maps.Point((zoom * 4) / 2, (zoom * 4) / 2), 
+                scaledSize: new google.maps.Size(zoom * 5, zoom * 5),
+                anchor: new google.maps.Point((zoom * 4) / 2, (zoom * 4) / 2),
               }}
-            />
+            >
+              {hovered && hovered.id === loc.id && (
+                <InfoWindow
+                  position={{ lat: loc.lat, lng: loc.lng }}
+                  options={{ disableAutoPan: false}} 
+                >
+                  <div className="text-[12px] ">
+                    <strong className="text-blue-700">
+                      <p className="truncate max-w-[150px] mb-2" title={loc.detail_address}>
+                        📍 {loc.address_name}
+                      </p>
+                    </strong>
+                    <p className="text-gray-800 ">Device ID: {loc.device_id || "-"}</p>
+                    <p className="text-gray-800 ">Detail Address: {loc.detail_address || "-"}</p>
+                    <p className="text-gray-800 ">Segment: {loc.segment || "-"}</p>
+                    <p className="text-gray-800 ">
+                      Status:{" "}
+                      <span
+                        className={loc.isActive ? "text-green-600" : "text-red-600"}
+                      >
+                        {loc.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </p>
+                  </div>
+                </InfoWindow>
+              )}
+            </Marker>
           ))}
         </GoogleMap>
       </div>

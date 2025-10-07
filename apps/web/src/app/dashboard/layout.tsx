@@ -17,9 +17,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // set selectedPage berdasarkan URL
   useEffect(() => {
-    const currentPath = pathname ?? "";
+    const currentPath = (pathname ?? "").toLowerCase();
 
-    if (currentPath.includes("Home")) setSelectedPage("Home"); 
+    if (currentPath.includes("home")) setSelectedPage("Home");
     else if (currentPath.includes("power-monitoring/voltage")) setSelectedPage("Voltage");
     else if (currentPath.includes("power-monitoring/current")) setSelectedPage("Current");
     else if (currentPath.includes("power-monitoring/frequency")) setSelectedPage("Frequency");
@@ -66,8 +66,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <LoadingOverlay show={loading} />
 
       {/* Sidebar */}
-      <Sidebar
+      <Sidebar 
         selectedPage={selectedPage}
+        setLoading={setLoading}
         setSelectedPage={setSelectedPage}
         setShowLogoutOverlay={setShowLogoutOverlay}
       />

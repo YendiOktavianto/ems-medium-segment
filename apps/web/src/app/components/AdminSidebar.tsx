@@ -2,20 +2,25 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, Circle } from "lucide-react"; // Circle jadi bullet dot
+import { flushSync } from "react-dom";
 
 export default function Sidebar({
   selectedPage,
+  setLoading,
   setSelectedPage,
   setShowLogoutOverlay,
 }: any) {
   const router = useRouter();
   const [isReportOpen, setIsReportOpen] = useState(false);
 
-  const handleClick = (key: string, path?: string) => {
+  const handleClick = async(key: string, path?: string) => {
     setSelectedPage(key);
     if (key === "Logout") {
       setShowLogoutOverlay(true);
     } else if (path) {
+      flushSync(() => {
+        setLoading(true); // langsung render overlay tanpa delay React
+      });
       router.push(path);
     }
   };
@@ -94,7 +99,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className="w-65 flex flex-col p-4 rounded-t-2xl mt-4 ml-4 h-screen fixed"
+      className="w-65 flex flex-col p-4 rounded-t-2xl mt-4 ml-4 h-screen fixed select-none"
       style={{
         background:
           "linear-gradient(100deg, rgba(6,11,40,1) 50%, rgba(26,31,55,0) 100%)",
@@ -142,13 +147,16 @@ export default function Sidebar({
                 : "text-gray-300 hover:text-white hover:bg-[#1A1F37]"
             }`}
             onClick={() => {
-              setSelectedPage("Report");
               setIsReportOpen(!isReportOpen);
             }}
           >
             <div className="flex items-center gap-4">
               <img
-                src={isReportActive ? "/report_active.svg" : "/report.svg"}
+                src={
+                  selectedPage === "Report" || isReportActive
+                    ? "/report_active.svg"
+                    : "/report.svg"
+                }
                 alt="Report"
                 className="w-6 h-6"
               />

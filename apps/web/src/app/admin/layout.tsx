@@ -40,11 +40,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setSelectedPage("Dashboard");
     }
 
-    // aktifkan loading setiap kali ganti path
     setLoading(true);
-    const timer = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, [pathname]);
+      const timer = setTimeout(() => setLoading(false), 800);
+      return () => clearTimeout(timer);
+   }, [pathname]);
 
   // clock
   useEffect(() => {
@@ -70,13 +69,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       className="min-h-screen flex bg-cover bg-center bg-fixed"
       style={{ backgroundImage: "url('/bg2.png')" }}
     >
-      {/* 🔹 overlay loading full page */}
+
       <LoadingOverlay show={loading} />
 
       {/* sidebar kiri */}
       <div>
         <Sidebar
           selectedPage={selectedPage}
+          setLoading={setLoading}
           setSelectedPage={setSelectedPage}
           setShowLogoutOverlay={setShowLogoutOverlay}
         />

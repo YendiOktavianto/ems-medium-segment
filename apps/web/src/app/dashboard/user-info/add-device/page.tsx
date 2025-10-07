@@ -52,6 +52,24 @@ export default function AddDevicePage() {
   const [showOverlayConfirm, setShowOverlayConfirm] = useState(false);
   const [showOverlayWarning, setShowOverlayWarning] = useState(false);
 
+  const [zoom, setZoom] = useState(9);
+
+  // 🔹 Helper: cari titik tengah provinsi
+  function getProvinceBoundingCenter(allData: DataItem[], provinceName: string) {
+    const items = allData.filter((d) => d.province === provinceName);
+    if (items.length === 0) return null;
+
+    const minLat = Math.min(...items.map((d) => d.latitude));
+    const maxLat = Math.max(...items.map((d) => d.latitude));
+    const minLng = Math.min(...items.map((d) => d.longitude));
+    const maxLng = Math.max(...items.map((d) => d.longitude));
+
+    return {
+      lat: (minLat + maxLat) / 2,
+      lng: (minLng + maxLng) / 2,
+    };
+  }
+
   useEffect(() => {
     fetch("/data/data.json")
       .then((res) => res.json())
@@ -59,38 +77,126 @@ export default function AddDevicePage() {
       .catch(console.error);
   }, []);
 
-  const provinces = Array.from(new Set(allData.map((d) => d.province))).map((p) => ({ name: p }));
+  // Province list
+  const provinces = Array.from(
+    new Map(allData.map((d) => [d.province, d])).values()
+  ).map((d) => ({
+    name: d.province,
+  }));
+
+  // City list (tergantung province)
   const cities = form.province_id
-    ? Array.from(new Set(allData.filter((d) => d.province === form.province_id).map((d) => d.city))).map((c) => ({ name: c }))
+    ? Array.from(
+        new Map(
+          allData
+            .filter((d) => d.province === form.province_id)
+            .map((d) => [d.city, d])
+        ).values()
+      ).map((d) => ({
+        name: d.city,
+        lat: d.latitude,
+        lng: d.longitude,
+        postal: d.postal,
+      }))
     : [];
+
+  // District list (tergantung city)
   const districts = form.city_id
-    ? Array.from(new Set(allData.filter((d) => d.city === form.city_id).map((d) => d.district))).map((k) => ({ name: k }))
+    ? Array.from(
+        new Map(
+          allData
+            .filter((d) => d.city === form.city_id)
+            .map((d) => [d.district, d])
+        ).values()
+      ).map((d) => ({
+        name: d.district,
+        lat: d.latitude,
+        lng: d.longitude,
+        postal: d.postal,
+      }))
     : [];
+
+  // Subdistrict list (tergantung district)
   const subdistricts = form.district_id
     ? allData
         .filter((d) => d.district === form.district_id)
-        .map((v) => ({ code: v.code, name: v.village, postal: v.postal, lat: v.latitude, lng: v.longitude }))
+        .map((v) => ({
+          code: v.code,
+          name: v.village,
+          lat: v.latitude,
+          lng: v.longitude,
+          postal: v.postal,
+        }))
     : [];
 
+  // 🔹 Handle Change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
 
-    if (name === "province_id") setForm((prev) => ({ ...prev, city_id: "", district_id: "", subdistrict_id: "" }));
-    if (name === "city_id") setForm((prev) => ({ ...prev, district_id: "", subdistrict_id: "" }));
-    if (name === "district_id") setForm((prev) => ({ ...prev, subdistrict_id: "" }));
+    if (name === "province_id") {
+      const center = getProvinceBoundingCenter(allData, value);
+      if (center) {
+        setForm((prev) => ({
+          ...prev,
+          province_id: value,
+          city_id: "",
+          district_id: "",
+          subdistrict_id: "",
+          lat: center.lat,
+          lng: center.lng,
+          postal_code: "",
+        }));
+        setZoom(7);
+        setMarkerEdited(false);
+      }
+    }
+
+    if (name === "city_id") {
+      const v = cities.find((k) => k.name === value);
+      if (v) {
+        setForm((prev) => ({
+          ...prev,
+          city_id: v.name,
+          district_id: "",
+          subdistrict_id: "",
+          lat: v.lat,
+          lng: v.lng,
+          postal_code: String(v.postal),
+        }));
+        setZoom(12);
+        setMarkerEdited(false);
+      }
+    }
+
+    if (name === "district_id") {
+      const v = districts.find((k) => k.name === value);
+      if (v) {
+        setForm((prev) => ({
+          ...prev,
+          district_id: v.name,
+          subdistrict_id: "",
+          lat: v.lat,
+          lng: v.lng,
+          postal_code: String(v.postal),
+        }));
+        setZoom(14);
+        setMarkerEdited(false);
+      }
+    }
 
     if (name === "subdistrict_id") {
       const v = subdistricts.find((k) => k.name === value);
       if (v) {
         setForm((prev) => ({
           ...prev,
+          subdistrict_id: v.name,
           lat: v.lat,
           lng: v.lng,
           postal_code: String(v.postal),
-          subdistrict_id: v.name,
         }));
+        setZoom(15);
         setMarkerEdited(false);
       }
     }
@@ -113,7 +219,7 @@ export default function AddDevicePage() {
   const handleSubmit = () => {
     if (!validateForm()) return;
     if (!markerEdited) {
-      setShowOverlayWarning(true); // ⚠️ show warning overlay
+      setShowOverlayWarning(true);
       return;
     }
     setShowOverlayConfirm(true);
@@ -166,7 +272,7 @@ export default function AddDevicePage() {
   if (!isLoaded) return <div className="text-white text-xs">Loading Map...</div>;
 
   const inputClass =
-  "w-full h-7 px-3 bg-[#1e1e2f] border border-gray-600 rounded-lg text-white text-xs placeholder-gray-400 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 outline-none";
+    "w-full h-7 px-3 bg-[#0a0e23] border border-[#2d3a70] rounded-lg text-white text-xs placeholder-gray-400 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 outline-none";
 
   const errorClass = "text-red-400 text-[10px] mt-1";
 
@@ -178,8 +284,8 @@ export default function AddDevicePage() {
           "linear-gradient(90deg, rgba(6,11,40,0.74) 0%, rgba(10,14,35,0.71) 100%)",
       }}
     >
-      <h2 className="text-2xl font-semibold">Request New Device</h2>
-      <p className="text-sm  mb-4">This is location for your device monitoring</p>
+      <h2 className="text-2xl font-semibold text-white">Request New Device</h2>
+      <p className="text-sm text-gray-300 mb-4">This is location for your device monitoring</p>
       <div className="flex flex-col md:flex-row gap-15">
         {/* Form */}
         <div className="flex-1 space-y-2">
@@ -264,7 +370,11 @@ export default function AddDevicePage() {
             {errors.detail_address && <p className={errorClass}>{errors.detail_address}</p>}
           </div>
 
-          <button onClick={handleSubmit} disabled={loading} className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl shadow-md text-sm">
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl shadow-md text-sm"
+          >
             {loading ? "Submitting..." : "Submit Request"}
           </button>
         </div>
@@ -274,7 +384,7 @@ export default function AddDevicePage() {
           <GoogleMap
             mapContainerClassName="w-full h-full"
             center={{ lat: form.lat, lng: form.lng }}
-            zoom={14}
+            zoom={zoom}
             onClick={(e) => {
               if (e.latLng) {
                 const lat = e.latLng.lat();
@@ -284,18 +394,20 @@ export default function AddDevicePage() {
               }
             }}
           >
-            <Marker
-              position={{ lat: form.lat, lng: form.lng }}
-              draggable
-              onDragEnd={(e) => {
-                if (e.latLng) {
-                  const lat = e.latLng.lat();
-                  const lng = e.latLng.lng();
-                  setMarkerEdited(true);
-                  setForm((prev) => ({ ...prev, lat, lng }));
-                }
-              }}
-            />
+            {form.province_id && form.city_id && form.district_id && form.subdistrict_id && (
+              <Marker
+                position={{ lat: form.lat, lng: form.lng }}
+                draggable
+                onDragEnd={(e) => {
+                  if (e.latLng) {
+                    const lat = e.latLng.lat();
+                    const lng = e.latLng.lng();
+                    setMarkerEdited(true);
+                    setForm((prev) => ({ ...prev, lat, lng }));
+                  }
+                }}
+              />
+            )}
           </GoogleMap>
           <p className="text-[8px] text-yellow-400 mt-1 text-center font-bold">
             ⚠️ Please make sure the marker is set to the exact location before submitting.
@@ -303,17 +415,21 @@ export default function AddDevicePage() {
         </div>
       </div>
 
-      {/* Overlay: Warning (must move marker) */}
+      {/* Overlay: Warning */}
       {showOverlayWarning && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-[#1f2a5b] p-6 rounded-lg shadow-lg text-center max-w-sm w-full">
-            <h3 className="text-white font-bold text-sm mb-3">Marker Required</h3>
-            <p className="text-gray-300 text-xs mb-4">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50">
+          <div className="rounded-2xl shadow-2xl p-6 max-w-md w-full text-white"
+            style={{
+              background: "linear-gradient(180deg, rgba(0,60,140,1) 0%, rgba(0,30,70,1) 300%)",
+            }}
+          >
+            <h3 className="text-white text-lg font-bold mb-4 text-center">Marker Required</h3>
+            <p className="text-gray-300 text-sm mb-4 text-center">
               You must adjust the map marker before you can submit the request.
             </p>
             <button
               onClick={() => setShowOverlayWarning(false)}
-              className="px-3 py-1 bg-blue-500 text-white text-xs rounded"
+              className="px-4 py-1 rounded-lg bg-blue-500 hover:bg-blue-600 transition mt-12 block mx-auto"
             >
               OK, I’ll set the marker
             </button>
@@ -321,31 +437,34 @@ export default function AddDevicePage() {
         </div>
       )}
 
-      {/* Overlay: Final Confirmation */}
+      {/* Overlay: Confirm */}
       {showOverlayConfirm && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-[#1f2a5b] p-6 rounded-lg shadow-lg text-center max-w-sm w-full">
-            <h3 className="text-white font-bold text-sm mb-3">Final Confirmation</h3>
-            <p className="text-gray-300 text-xs mb-4">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50">
+          <div className="rounded-2xl shadow-2xl p-6 max-w-md w-full text-white" 
+            style={{
+              background: "linear-gradient(180deg, rgba(0,60,140,1) 0%, rgba(0,30,70,1) 300%)",
+            }}
+          >
+            <h3 className="text-white text-lg font-bold mb-4 text-center">Final Confirmation</h3>
+            <p className="text-gray-300 text-sm mb-4">
               Location chosen:
               <br />
               <span className="font-bold text-yellow-300">
                 {form.lat.toFixed(5)}, {form.lng.toFixed(5)}
               </span>
-              <br />
-              Is this correct?
-              Once submitted, only administrators can make changes.
+              <br /><br />
+              Is this correct? <br /> Once submitted, only administrators can make changes.
             </p>
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowOverlayConfirm(false)}
-                className="px-3 py-1 bg-gray-500 text-white text-xs rounded"
+                className=" bg-gray-400 hover:bg-gray-500 text-white px-4 py-1 rounded-lg transition mt-12 block"
               >
                 Check Again
               </button>
               <button
                 onClick={doSubmit}
-                className="px-3 py-1 bg-red-500 text-white text-xs rounded"
+                className="px-4 py-1 rounded-lg bg-blue-500 hover:bg-blue-600 transition mt-12 block"
               >
                 Confirm & Submit
               </button>
