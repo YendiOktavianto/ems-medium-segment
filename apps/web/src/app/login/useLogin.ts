@@ -5,11 +5,13 @@ import { FormState, ErrorsState, Role } from "./type";
 import { validateField } from "./validation";
 import { ERROR_MESSAGES, ROLE_REDIRECT } from "./constants";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
 export const useLogin = () => {
   const router = useRouter();
 
-  const [form, setForm] = useState<FormState>({ identifier: "", password_hash: "" });
-  const [errors, setErrors] = useState<ErrorsState>({ identifier: "", password_hash: "" });
+  const [form, setForm] = useState<FormState>({ identifier: "", password: "" });
+  const [errors, setErrors] = useState<ErrorsState>({ identifier: "", password: "" });
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -25,7 +27,7 @@ export const useLogin = () => {
 
     const newErrors: ErrorsState = {
       identifier: validateField("identifier", form.identifier),
-      password_hash: validateField("password_hash", form.password_hash),
+      password: validateField("password", form.password),
     };
     setErrors(newErrors);
 
@@ -34,7 +36,9 @@ export const useLogin = () => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:3000/auth/login", {
+      console.debug("[ENV] API_URL =", API_URL);
+      console.debug("[LOGIN][REQ]", { url: `${API_URL}/auth/login`, body: { ...form, rememberMe } });
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -43,23 +47,37 @@ export const useLogin = () => {
 
       const data = await res.json();
 
-      if (!res.ok) {
-        const msg = (data.message || "").toLowerCase();
-        if (msg.includes("username") || msg.includes("identifier")) {
-          setErrors({ identifier: "we couldn't find an account with this username or email", password_hash: "" });
+    if (!res.ok) {
+      // 1) Backend baru: pakai payload per-field
+      if (data?.errors && typeof data.errors === "object") {
+        setErrors({
+          identifier: data.errors.identifier ?? "",
+          password:   data.errors.password   ?? "",
+        });
+      } else {
+        // 2) Fallback backend lama: parse message tunggal
+        const msg = String(data?.message ?? "").toLowerCase();
+        if (msg.includes("username") || msg.includes("email") || msg.includes("identifier")) {
+          setErrors({ identifier: "Incorrect Email or Username", password: "" });
         } else if (msg.includes("password")) {
-          setErrors({ identifier: "", password_hash: "the password you entered is incorrect" });
+          setErrors({ identifier: "", password: "Incorrect Password" });
+        } else if (msg.includes("invalid credentials")) {
+          // tampilkan dua-duanya jika pesan generik
+          setErrors({ identifier: "Incorrect Email or Username", password: "Incorrect Password" });
         } else {
-          setErrors({ identifier: "", password_hash: ERROR_MESSAGES.unknownError });
+          setErrors({ identifier: "", password: ERROR_MESSAGES.unknownError });
         }
-        setLoading(false);
-        return;
       }
+      setLoading(false);
+      return;
+    }
 
-      const role: Role = data.role;
-      router.push(ROLE_REDIRECT[role]);
+      const role = (data?.role || data?.user?.role || "user") as Role;
+      const target = ROLE_REDIRECT?.[role] || "/dashboard";
+      console.debug("[LOGIN] redirect ->", target);
+      router.push(target);
     } catch (err) {
-      setErrors({ identifier: ERROR_MESSAGES.serverError, password_hash: "" });
+      setErrors({ identifier: ERROR_MESSAGES.serverError, password: "" });
       setLoading(false);
     }
   };

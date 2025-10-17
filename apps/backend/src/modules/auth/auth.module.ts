@@ -7,18 +7,22 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { TokensModule } from './tokens/tokens.module';
+import { PasswordResetModule } from './password-reset/password-reset.module';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
+    TokensModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         secret: cfg.get<string>('JWT_ACCESS_SECRET'),
         signOptions: { expiresIn: cfg.get<string>('JWT_ACCESS_EXPIRES', '15m') },
       }),
-    }), // secret & expires dihandle di service per token type
+    }),
+    PasswordResetModule,
   ],
   providers: [AuthService, JwtStrategy, JwtAuthGuard],
   controllers: [AuthController],

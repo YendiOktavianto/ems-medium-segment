@@ -1,6 +1,6 @@
 export type FormState = {
   identifier: string;
-  password_hash: string;
+  password: string;
 };
 
 export type ErrorsState = FormState;
