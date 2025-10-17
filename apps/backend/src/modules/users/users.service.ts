@@ -70,4 +70,8 @@ export class UsersService {
     const ok = await argon2.verify(user.password_hash, password);
     return ok ? user : null;
   }
+
+  async updatePasswordHash(userId: string, password_hash: string) {
+    await this.repo.update({ userId }, { password_hash });
+  }
 }

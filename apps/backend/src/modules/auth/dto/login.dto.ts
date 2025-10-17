@@ -4,7 +4,6 @@ import { Transform } from 'class-transformer';
 const toTrimmedPrimitiveString = (v: unknown): string => {
   if (typeof v === 'string') return v.trim();
   if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-  // null, undefined, object, array, function → tolak dengan mengembalikan ''
   return '';
 };
 
