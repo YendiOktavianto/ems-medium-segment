@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { ForgotForm } from "./type";
 import { validateEmail } from "./validation";
 import { ERROR_MESSAGES } from "./constants";
+import { jsonFetch } from "../lib/api";
+import { errorMessage } from "../lib/error";
 
 export const useForgot = () => {
   const router = useRouter();
@@ -29,23 +31,14 @@ export const useForgot = () => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:3000/auth/forgot-password", {
+      await jsonFetch<{ ok: boolean }>("/auth/forgot-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: form.email }),
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.message || ERROR_MESSAGES.sendFailed);
-        setLoading(false);
-        return;
-      }
-
+      // Selalu redirect ke verify, security-wise backend tidak bocorkan status email
       router.push(`/verify?email=${encodeURIComponent(form.email)}`);
-    } catch {
-      setError(ERROR_MESSAGES.serverError);
+    } catch (e: unknown) {
+       setError(errorMessage(e, ERROR_MESSAGES.serverError));
     } finally {
       setLoading(false);
     }

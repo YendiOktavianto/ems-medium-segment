@@ -10,6 +10,7 @@ import { DatabaseModule } from './database/database.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { LocationModule } from './modules/dashboard/locations/location.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     UsersModule,
     AuthModule,
     ThrottlerModule.forRoot([{ ttl: 60, limit: 5 }]),
+    LocationModule,
   ],
   controllers: [AppController],
   providers: [

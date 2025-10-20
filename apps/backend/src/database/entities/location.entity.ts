@@ -5,17 +5,17 @@ import { GeneralInfo } from './general-info.entity';
 @Entity('location')
 @Unique(['address'])
 export class Location {
-  @PrimaryGeneratedColumn('uuid')
-  location_id: string;
+  @PrimaryGeneratedColumn('uuid', { name: 'location_id' })
+  location_id!: string;
 
-  @Column()
-  segment: string;
+  @Column({ name: 'segment', type: 'varchar', nullable: true })
+  segment!: string;
 
   @OneToOne(() => Address, (a) => a.location, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'address_id' })
-  address: Address;
+  @JoinColumn({ name: 'address_id', referencedColumnName: 'address_id' })
+  address!: Address;
 
   @OneToOne(() => GeneralInfo, (g) => g.location, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'device_id' })
-  device: GeneralInfo;
+  @JoinColumn({ name: 'device_id', referencedColumnName: 'device_id' })
+  device!: GeneralInfo;
 }
