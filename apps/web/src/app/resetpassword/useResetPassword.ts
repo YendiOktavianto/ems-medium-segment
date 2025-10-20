@@ -2,14 +2,11 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ResetPasswordForm, PasswordStrength } from "./type";
 import { validatePassword, validateConfirm, evaluatePasswordStrength } from "./validation";
-import { jsonFetch } from "../lib/api";
-import { errorMessage } from "../lib/error";
 
 export default function useResetPassword() {
   const router = useRouter();
   const params = useSearchParams();
-  const email = params?.get("email") ?? "";
-  const code = params?.get("code") ?? "";
+  const token = params?.get("token") ?? "";
 
   const [form, setForm] = useState<ResetPasswordForm>({ password: "", confirm: "" });
   const [errorPassword, setErrorPassword] = useState("");
@@ -19,48 +16,48 @@ export default function useResetPassword() {
   const [loading, setLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>("");
 
- const handleChange = (field: keyof ResetPasswordForm, value: string) => {
-    setGlobalError("");
-    setSuccess("");
-    setForm((s) => ({ ...s, [field]: value }));
-
-    if (field === "password") {
-      setErrorPassword(validatePassword(value));
-      setPasswordStrength(evaluatePasswordStrength(value));
-      // sinkronisasi confirm bila sudah diisi
-      if (form.confirm) setErrorConfirm(validateConfirm(value, form.confirm));
-    }
-    if (field === "confirm") {
-      setErrorConfirm(validateConfirm(form.password, value));
-    }
+  const handleChange = (field: keyof ResetPasswordForm, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    if (field === "password") setPasswordStrength(evaluatePasswordStrength(value));
+    if (errorPassword) setErrorPassword("");
+    if (errorConfirm) setErrorConfirm("");
+    if (globalError) setGlobalError("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const pErr = validatePassword(form.password);
-    const cErr = validateConfirm(form.password, form.confirm);
-    setErrorPassword(pErr);
-    setErrorConfirm(cErr);
-    if (pErr || cErr) return;
+  const validateFields = () => {
+    const passErr = validatePassword(form.password);
+    const confirmErr = validateConfirm(form.password, form.confirm);
+
+    setErrorPassword(passErr);
+    setErrorConfirm(confirmErr);
+
+    if (!token) setGlobalError("Invalid or missing token");
+
+    return !passErr && !confirmErr && !!token;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateFields()) return;
 
     setLoading(true);
     try {
-      const res = await jsonFetch<{ ok: boolean }>("/auth/reset-password", {
+      const res = await fetch("http://localhost:3000/auth/reset-password", {
         method: "POST",
-        body: JSON.stringify({
-          email,
-          code,
-          newPassword: form.password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, newPassword: form.password }),
       });
+
+      const data = await res.json();
       if (!res.ok) {
-        setGlobalError("Reset password gagal. Periksa kembali kode Anda.");
+        setGlobalError(data.message || "Failed to reset password");
+        setLoading(false);
         return;
       }
-      setSuccess("Password berhasil diubah. Mengalihkan ke halaman login...");
-      setTimeout(() => router.replace("/login"), 1200);
-    } catch (e: unknown) {
-      setGlobalError(errorMessage(e, "Terjadi kesalahan server"));
+
+      setSuccess("Password has been reset, redirecting to login...");
+      setTimeout(() => router.push("/login"), 2000);
+    } catch {
+      setGlobalError("Server error, please try again later");
     } finally {
       setLoading(false);
     }

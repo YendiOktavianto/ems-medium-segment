@@ -16,104 +16,7 @@ export default function AboutPage() {
     textAlign: "center",
     boxShadow: "0 3px 8px rgba(0,0,0,0.3)",
   };
-
-  // --- Group Companies ---
-  const initialNodes: Node[] = [
-    {
-      id: "1",
-      data: { label: "PT Innotech Global Solusindo\n(Principal of Product & Solution)" },
-      position: { x: 500, y: 0 },
-      style: {
-        background: "linear-gradient(135deg, #0f4c81, #1d9bf0)",
-        color: "#fff",
-        fontWeight: "bold",
-        borderRadius: 16,
-        padding: 16,
-        fontSize: 10,
-        textAlign: "center",
-        boxShadow: "0 6px 16px rgba(0,0,0,0.4)",
-      },
-    },
-    {
-      id: "2",
-      data: { label: "PT Elektrik Total Solusi\n(High Market Product Fabrication)" },
-      position: { x: 250, y: 150 },
-      style: {
-        background: "linear-gradient(135deg, #072b56, #0a3a70)",
-        color: "#e6f5ff",
-        borderRadius: 12,
-        padding: 14,
-        fontSize: 10,
-        textAlign: "center",
-        boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
-      },
-    },
-    {
-      id: "3",
-      data: { label: "CV Innotech Indonesia\n(Middle & Retail Fabrication)" },
-      position: { x: 750, y: 150 },
-      style: {
-        background: "linear-gradient(135deg, #072b56, #0a3a70)",
-        color: "#e6f5ff",
-        borderRadius: 12,
-        padding: 14,
-        fontSize: 10,
-        textAlign: "center",
-        boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
-      },
-    },
-    {
-      id: "4",
-      data: { label: "PT Sama Sejati\n(High Market Distributor)" },
-      position: { x: 50, y: 300 },
-      style: distributorStyle,
-    },
-    {
-      id: "5",
-      data: { label: "PT Arkanindo\n(High Market Distributor)" },
-      position: { x: 250, y: 300 },
-      style: distributorStyle,
-    },
-    {
-      id: "6",
-      data: { label: "PT Wibawa Solusi Elektrik\n(High Market Distributor)" },
-      position: { x: 450, y: 300 },
-      style: distributorStyle,
-    },
-    {
-      id: "7",
-      data: { label: "PT Mahkota Inti Teknologi\n(Distributor + Fabrication)" },
-      position: { x: 650, y: 300 },
-      style: distributorStyle,
-    },
-    {
-      id: "8",
-      data: { label: "CV Karya Electric\n(EPS Distributor & Support)" },
-      position: { x: 850, y: 300 },
-      style: distributorStyle,
-    },
-    {
-      id: "9",
-      data: { label: "CV MUE\n(Middle & Retail Distributor)" },
-      position: { x: 1050, y: 300 },
-      style: distributorStyle,
-    },
-  ];
-
-  const initialEdges: Edge[] = [
-    { id: "e1-2", source: "1", target: "2", style: { stroke: "#1d9bf0", strokeWidth: 2 } },
-    { id: "e1-3", source: "1", target: "3", style: { stroke: "#1d9bf0", strokeWidth: 2 } },
-    { id: "e2-4", source: "2", target: "4", style: { stroke: "#6fb6ff", strokeWidth: 1.5 } },
-    { id: "e2-5", source: "2", target: "5", style: { stroke: "#6fb6ff", strokeWidth: 1.5 } },
-    { id: "e2-6", source: "2", target: "6", style: { stroke: "#6fb6ff", strokeWidth: 1.5 } },
-    { id: "e2-7", source: "2", target: "7", style: { stroke: "#6fb6ff", strokeWidth: 1.5 } },
-    { id: "e3-8", source: "3", target: "8", style: { stroke: "#6fb6ff", strokeWidth: 1.5 } },
-    { id: "e3-9", source: "3", target: "9", style: { stroke: "#6fb6ff", strokeWidth: 1.5 } },
-  ];
-
-  const [nodes, , onNodesChange] = useNodesState(initialNodes);
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
-
+  
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#041023] via-[#06305a] to-[#021026] text-white font-poppins">
       <Navbar />
@@ -240,27 +143,6 @@ export default function AboutPage() {
           ))}
         </div>
       </section>
-
-      {/* Group Companies Diagram */}
-      <h2 className="text-3xl font-bold text-center text-[#e6f5ff] mb-12 mt-20">
-        Our Corporation & Partners
-      </h2>
-
-      <div className="w-full h-[520px] max-w-5xl mx-auto mb-20 rounded-2xl p-4">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          fitView
-          panOnScroll
-          zoomOnScroll={false}
-          className="!w-full h-[520px] max-w-5xl mx-auto mb-20 rounded-2xl shadow-xl p-4 bg-gradient-to-br from-[#072b56]/70 to-[#041023]/70 border border-[#1d9bf0]/20"
-        >
-          <Controls showInteractive={false} style={{ borderRadius: "8px", padding: "5px", color: "#072b56" }} />
-          <Background color="#06305a" gap={25} />
-        </ReactFlow>
-      </div>
 
       {/* Line of Products */}
       <section className="py-20 px-6 md:px-12 max-w-7xl mx-auto">

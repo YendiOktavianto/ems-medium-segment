@@ -438,7 +438,14 @@ export default function DataTable(): React.JSX.Element {
   // ---------- RENDER ----------
   return (
     <div
-      className="rounded-2xl p-4 mx-auto max-w-full mr-8"
+      className="
+        flex flex-col mx-auto sm:mr-8 rounded-2xl
+        box-border                 /* padding tidak menambah tinggi total */
+        h-[84dvh] max-h-[100dvh]  /* kunci: tinggi layar tanpa scroll */
+        overflow-hidden
+        p-5 sm:p-4
+        pb-[max(env(safe-area-inset-bottom),12px)]  /* aman di bawah */
+      "
       style={{
         background:
           "linear-gradient(180deg, rgba(0,60,140,1) 0%, rgba(0,30,70,1) 100%)",
@@ -533,7 +540,7 @@ export default function DataTable(): React.JSX.Element {
       </div>
 
       {/* ---------- TABLE ---------- */}
-      <div className="overflow-x-auto overflow-y-auto max-h-[310px] rounded-lg shadow-lg custom-scroll">
+      <div className="flex-1 min-h-0 overflow-auto rounded-lg shadow-lg custom-scroll">
         <table className="min-w-full text-white text-xs">
           <thead className="bg-[#0C1F3C] border-b border-gray-700 sticky top-0 z-10">
             <tr>
@@ -549,7 +556,7 @@ export default function DataTable(): React.JSX.Element {
               ].map((header) => (
                 <th
                   key={header}
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-wider"
+                  className="px-4 py-4 text-left font-semibold uppercase tracking-wider"
                 >
                   {header}
                 </th>
@@ -559,7 +566,7 @@ export default function DataTable(): React.JSX.Element {
           <tbody>
             {paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-3">
+                <td colSpan={8} className="text-center py-6">
                   No data found
                 </td>
               </tr>
@@ -571,14 +578,14 @@ export default function DataTable(): React.JSX.Element {
                     index % 2 === 0 ? "bg-[#0C1F3C]" : "bg-[#1C345C]"
                   } hover:bg-blue-800`}
                 >
-                  <td className="px-2 py-1">{row.id}</td>
-                  <td className="px-2 py-1">{row.username}</td>
-                  <td className="px-2 py-1">{row.email}</td>
-                  <td className="px-2 py-1">{row.phone_number}</td>
-                  <td className="px-2 py-1">{row.role}</td>
-                  <td className="px-2 py-1">{row.total_device}</td>
-                  <td className="px-2 py-1">{row.created_at}</td>
-                  <td className="flex gap-2 py-1 px-5">
+                  <td className="px-2 py-2">{row.id}</td>
+                  <td className="px-2 py-2">{row.username}</td>
+                  <td className="px-2 py-2">{row.email}</td>
+                  <td className="px-2 py-2">{row.phone_number}</td>
+                  <td className="px-2 py-2">{row.role}</td>
+                  <td className="px-2 py-2">{row.total_device}</td>
+                  <td className="px-2 py-2">{row.created_at}</td>
+                  <td className="flex gap-2 py-2 px-5">
                     <button
                       className="p-1 bg-blue-600 hover:bg-blue-700 rounded-sm text-white"
                       onClick={() => openEdit(row)}
@@ -702,7 +709,7 @@ export default function DataTable(): React.JSX.Element {
                       let formatted = phone.startsWith("+62")
                         ? phone
                         : "+62" + phone.replace(/^(\+|0|62)+/, "");
-                      setNewUser({ ...newUser, phone_number: formatted }); // ✅ BENAR
+                      setNewUser({ ...newUser, phone_number: formatted }); 
                     }}
                     onKeyDown={(e) => {
                       // Blok user menghapus awalan +62
@@ -802,7 +809,7 @@ export default function DataTable(): React.JSX.Element {
               background:
                 "linear-gradient(180deg, rgba(0,60,140,1) 0%, rgba(0,30,70,1) 300%)",
             }}
-          >
+        >
             <h2 className="text-lg font-bold mb-4 text-center">
               Edit User — #{editRow.id}
             </h2>
@@ -906,8 +913,9 @@ export default function DataTable(): React.JSX.Element {
                 "linear-gradient(180deg, rgba(0,60,140,1) 0%, rgba(0,30,70,1) 300%)",
             }}
           >
-            <p className="text-sm">
-              Delete user <b>{confirmDelete.username}</b>?
+            <h2 className="text-lg font-bold mb-2">Delete Confirmation</h2>
+            <p className="text-sm mb-8">
+              Are you sure want to delete user <b>{confirmDelete.username}</b>?
             </p>
             <div className="flex justify-end gap-2 mt-5">
               <button
