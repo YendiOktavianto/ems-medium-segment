@@ -1,6 +1,8 @@
 "use client";
 
+import { jsonFetch } from "@/app/lib/api";
 import Image from "next/image";
+import { useRouter } from "next/router";
 import { FC } from "react";
 
 type LogoutOverlayProps = {
@@ -9,6 +11,28 @@ type LogoutOverlayProps = {
 };
 
 const LogoutOverlay: FC<LogoutOverlayProps> = ({ setSelectedPage, setShowLogoutOverlay }) => {
+  const router = useRouter();
+
+  const doLogout = async () => {
+    try {
+      await jsonFetch<{ ok: boolean }>("/auth/logout", {
+        method: "POST",
+        withCreds: true, // penting agar cookie httpOnly ikut terkirim
+      });
+    } catch {
+      // abaikan error supaya UX tetap mulus
+    } finally {
+      // bersihkan token FE jika ada
+      try {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+      } catch {}
+      setShowLogoutOverlay(false);
+      setSelectedPage("Logout");
+      router.replace("/login");
+    }
+  };
+  
   return (
     <div
       className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 transition-opacity duration-200"
@@ -40,10 +64,7 @@ const LogoutOverlay: FC<LogoutOverlayProps> = ({ setSelectedPage, setShowLogoutO
             Cancel
           </button>
           <button
-            onClick={() => {
-              setSelectedPage("Logout");
-              setShowLogoutOverlay(false);
-            }}
+            onClick={doLogout}
             className="bg-blue-500 hover:bg-blue-600 width:5 transition-colors duration-200 px-4 py-2 rounded-full text-sm"
           >
             Logout
