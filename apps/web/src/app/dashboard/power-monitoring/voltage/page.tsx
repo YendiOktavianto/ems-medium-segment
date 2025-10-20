@@ -1,7 +1,6 @@
-// app/(dashboard)/dashboard/power-monitoring/voltage/Section.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   AreaChart,
   Area,
@@ -12,16 +11,36 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import type { Location } from "../page";
 
-export default function VoltageSection({ device }: { device?: Location }) {
+type Location = {
+  device_id: string;
+  address_name: string;
+  detail_location: string;
+  watt_phase: string;
+  segment: string;
+};
+
+export default function Dashboard() {
+  const locations: Location[] = [
+    /*{
+      device_id: "DEV001",
+      address_name: "Gedung A",
+      detail_location: "Lantai 1",
+      watt_phase: "450W / 3 Phase",
+      segment: "Segmen 1",
+    },
+    {
+      device_id: "DEV002",
+      address_name: "Gedung B",
+      detail_location: "Lantai 2",
+      watt_phase: "300W / 1 Phase",
+      segment: "Segmen 2",
+    },*/
+  ];
+
+  const [selectedLocation, setSelectedLocation] = useState(0);
   const [voltage, setVoltage] = useState(0);
   const [data, setData] = useState<{ time: string; voltage: number }[]>([]);
-
-  // reset data saat device berubah
-  useEffect(() => {
-    setData([]);
-  }, [device?.device_id]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -46,6 +65,7 @@ export default function VoltageSection({ device }: { device?: Location }) {
     const rad = (angleDeg * Math.PI) / 180;
     return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
   };
+
   const describeArc = (cx: number, cy: number, r: number, start: number, end: number) => {
     const startPt = polarToCartesian(cx, cy, r, end);
     const endPt = polarToCartesian(cx, cy, r, start);
@@ -53,31 +73,110 @@ export default function VoltageSection({ device }: { device?: Location }) {
     return ["M", startPt.x, startPt.y, "A", r, r, 0, largeArc, 0, endPt.x, endPt.y].join(" ");
   };
 
+  const activeLoc = locations[selectedLocation] || undefined;
+
+    // CustomTooltip di luar komponen utama
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div
+          style={{
+            backgroundColor: "#05245C",
+            border: "1px solid #1E2A50",
+            borderRadius: "12px",
+            boxShadow: "0 8px 20px rgba(0,0,0,0.6)",
+            padding: "12px 16px",
+            color: "#fff",
+            fontFamily: "Inter, sans-serif",
+            fontSize: "13px",
+            animation: "fadeIn 0.2s ease-in-out",
+            minWidth: "160px",
+          }}
+        >
+          <div style={{ color: "#00CED1", fontWeight: 600, marginBottom: 6 }}>
+            Time: {label}
+          </div>
+          {payload.map((p: any) => {
+            const colorMap: { [key: string]: string } = {
+              Voltage: "#1E90FF",
+              Current: "#00FF00",
+              Frequency: "#FFFF00",
+              PowerFactor: "#FF00FF",
+              Power: "#FF4500",
+              EnergyUsage: "#00CED1",
+            };
+            return (
+              <div
+                key={p.dataKey}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  marginBottom: 4,
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: "10px",
+                    height: "10px",
+                    borderRadius: "50%",
+                    backgroundColor: colorMap[p.dataKey] || "#fff",
+                  }}
+                ></span>
+                <span style={{ fontWeight: 500 }}>
+                  {p.dataKey}: {p.value}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div
-      className="flex flex-col gap-8 rounded-2xl p-8 mx-auto mb-8"
+      className="flex flex-col gap-8 rounded-2xl p-8 mx-auto mr-8 mb-8"
       style={{
         background:
           "linear-gradient(90deg, rgba(6,11,40,0.74) 0%, rgba(10,14,35,0.71) 100%)",
       }}
     >
-      {/* DEVICE INFO 
+      {/* TITLE */}
+      <h1 className="text-center text-2xl font-semibold text-white">Voltage Monitoring</h1>
+
+      {/* DEVICE INFO */}
       <div className="flex flex-col sm:flex-row justify-between text-[9px] text-white gap-4">
         <div>
           <p className="uppercase tracking-wide opacity-70">Serial Number</p>
-          <p className="font-lg break-all">{device?.device_id ?? "-"}</p>
+          <p className="font-lg">{activeLoc?.device_id ?? "-"}</p>
 
           <p className="mt-2 uppercase tracking-wide opacity-70">Location</p>
-          <p className="font-lg">
-            {device ? `${device.address_name} | ${device.detail_location}` : "-"}
-          </p>
+          {locations.length > 1 ? (
+            <select
+              className="bg-[#0C1F3C] border border-gray-600 text-white px-2 py-1 rounded w-full sm:w-auto"
+              value={selectedLocation}
+              onChange={(e) => setSelectedLocation(Number(e.target.value))}
+            >
+              {locations.map((loc, idx) => (
+                <option key={idx} value={idx}>
+                  {loc.address_name} | {loc.detail_location}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className="font-lg">{activeLoc ? `${activeLoc.address_name} | ${activeLoc.detail_location}` : "-"}</p>
+          )}
         </div>
+
         <div className="text-left sm:text-right">
           <p className="uppercase tracking-wide opacity-70">Wattage / Phase</p>
-          <p className="font-lg">{device?.watt_phase ?? "-"}</p>
+          <p className="font-lg">{activeLoc?.watt_phase ?? "-"}</p>
 
           <p className="mt-2 uppercase tracking-wide opacity-70">Segment</p>
-          <p className="font-lg">{device?.segment ?? "-"}</p>
+          <p className="font-lg">{activeLoc?.segment ?? "-"}</p>
         </div>
       </div>
 
@@ -135,22 +234,21 @@ export default function VoltageSection({ device }: { device?: Location }) {
               <YAxis domain={[0, 300]} ticks={[0, 60, 120, 180, 240, 300]} tick={{ fill: "#fff", fontSize: 10 }} label={{ value: "Voltage", angle: -90, position: "insideLeft", fill: "#fff", dy:20 }} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#0C1F3C',
-                  borderRadius: '8px',
-                  border: '1px solid #333',
-                  color: '#fff',
-                }}
-              />
+                backgroundColor: '#0C1F3C',
+                borderRadius: '8px',
+                border: '1px solid #333',
+                color: '#fff',
+              }}/>  
               <Legend />
-              <Area
-                type="monotone"
-                dataKey="voltage"
+              <Area 
+                type="monotone" 
+                dataKey="voltage" 
                 stroke="#9bff5b"
                 fill="rgba(155,255,91,0.4)"
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                isAnimationActive={false}
-                name="Voltage (Volt)"
+                strokeWidth={2} 
+                dot={{ r: 3 }} 
+                isAnimationActive={false} 
+                name="Voltage (Volt)" 
               />
             </AreaChart>
           </ResponsiveContainer>

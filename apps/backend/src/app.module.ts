@@ -12,8 +12,6 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LocationModule } from './modules/dashboard/locations/location.module';
 
-import { DeviceRequestModule } from './modules/device-request/device-request.module';
-
 @Module({
   imports: [
     // load .env sekali untuk seluruh app
@@ -27,7 +25,6 @@ import { DeviceRequestModule } from './modules/device-request/device-request.mod
     AuthModule,
     ThrottlerModule.forRoot([{ ttl: 60, limit: 5 }]),
     LocationModule,
-    DeviceRequestModule,
   ],
   controllers: [AppController],
   providers: [

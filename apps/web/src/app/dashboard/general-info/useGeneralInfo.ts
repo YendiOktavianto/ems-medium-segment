@@ -1,71 +1,31 @@
-// ./useGeneralInfo.ts
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
-
-export type DeviceGeneralInfo = {
-  device_id: string;
-  serial_number: string;
-  location?: string;        // alias: address_name
-  address_name?: string;    // alias: location
-  detail_location?: string;
-  wattage?: string;         // alias: watt_phase
-  watt_phase?: string;      // alias: wattage
-  segment?: string;
-  active?: boolean;
-};
+import { useState, useEffect } from "react";
+import { Device } from "./types";
+import { API_ENDPOINT } from "./constants";
 
 export function useGeneralInfo(userId?: string, token?: string) {
-  const [devices, setDevices] = useState<DeviceGeneralInfo[]>([]);
-  const [selectedDeviceIndex, setSelectedDeviceIndex] = useState<number>(0);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [selectedDeviceIndex, setSelectedDeviceIndex] = useState(0);
 
   useEffect(() => {
-    // --- MOCK DATA (ganti dengan fetch ke API kamu nanti) ---
-    const MOCK: DeviceGeneralInfo[] = [
-      {
-        device_id: "EMS-ALFA-001",
-        serial_number: "SN-ALFA-001",
-        location: "Rumah Utama",
-        detail_location: "Jl. Merdeka No. 10, Salatiga",
-        wattage: "2200VA / 1-Phase",
-        segment: "Residential",
-        active: true,
-      },
-      {
-        device_id: "EMS-ALFA-002",
-        serial_number: "SN-ALFA-002",
-        address_name: "Toko Alfamart Salatiga 1",
-        detail_location: "Jl. Diponegoro No. 21, Salatiga",
-        watt_phase: "3500VA / 1-Phase",
-        segment: "Retail",
-        active: true,
-      },
-      {
-        device_id: "EMS-ALFA-003",
-        serial_number: "SN-ALFA-003",
-        location: "Kantor Pusat Cabang",
-        detail_location: "Jl. Malioboro No. 1, Yogyakarta",
-        wattage: "6600VA / 3-Phase",
-        segment: "Office",
-        active: false,
-      },
-    ];
+    if (!userId) return;
 
-    setDevices(MOCK);
-    setSelectedDeviceIndex(0);
-  }, [userId]);
+    const fetchDevices = async () => {
+      try {
+        const res = await fetch(`${API_ENDPOINT}?userId=${userId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const data: Device[] = await res.json();
+        setDevices(data);
+        setSelectedDeviceIndex(0); // default pilih device pertama
+      } catch (err) {
+        console.error("Error fetching devices:", err);
+      }
+    };
 
-  // jaga-jaga kalau index keluar range saat devices berubah
-  useEffect(() => {
-    if (devices.length && selectedDeviceIndex > devices.length - 1) {
-      setSelectedDeviceIndex(0);
-    }
-  }, [devices.length, selectedDeviceIndex]);
+    fetchDevices();
+  }, [userId, token]);
 
-  const currentDevice = useMemo(
-    () => (devices.length ? devices[selectedDeviceIndex] : undefined),
-    [devices, selectedDeviceIndex]
-  );
+  const currentDevice = devices[selectedDeviceIndex] || null;
 
   return { devices, selectedDeviceIndex, setSelectedDeviceIndex, currentDevice };
 }

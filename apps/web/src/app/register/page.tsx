@@ -17,7 +17,6 @@ type FormState = {
 export default function Register() {
   const router = useRouter();
 
-  const [isLoading, setIsLoading] = useState(true);
   const [form, setForm] = useState<FormState>({
     email: "",
     username: "",
@@ -388,20 +387,21 @@ export default function Register() {
         </div>
       </div>
       {/* Toast Notification */}
-      {toastMessage && (
-        <div
-          className={`fixed top-6 left-1/2 -translate-x-1/2 px-5 py-2 rounded-lg shadow-lg text-sm animate-fade-in-out z-[9999]
-            ${
-              toastMessage.includes("❌")
-                ? "bg-red-600"
-                : toastMessage.includes("✅")
-                ? "bg-green-600"
-                : "bg-blue-600"
-            } text-white`}
-        >
-          {toastMessage}
-        </div>
-      )}
+{toastMessage && (
+  <div
+    className={`fixed top-6 left-1/2 -translate-x-1/2 px-5 py-2 rounded-lg shadow-lg text-sm animate-fade-in-out z-[9999]
+      ${
+        toastMessage.includes("❌")
+          ? "bg-red-600"
+          : toastMessage.includes("✅")
+          ? "bg-green-600"
+          : "bg-blue-600"
+      } text-white`}
+  >
+    {toastMessage}
+  </div>
+)}
+
     </div>
   );
 }

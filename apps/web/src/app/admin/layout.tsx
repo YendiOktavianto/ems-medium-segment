@@ -1,4 +1,3 @@
-// app/admin/_components/DashboardLayout.tsx (atau path kamu sekarang)
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -35,12 +34,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setSelectedPage("Energy Usage Report");
     } else if (currentPath.includes("list-cost-energy")) {
       setSelectedPage("List Cost Energy");
-    } else if (currentPath.includes("edit-landing")) {
-      setSelectedPage("Edit Landing Page");
-    } else if (currentPath.includes("edit-company")) {
-      setSelectedPage("Edit Company");
-    } else if (currentPath.includes("product-edit")) {
-      setSelectedPage("Edit Product");
     } else if (currentPath.includes("logout")) {
       setSelectedPage("Logout");
     } else {
@@ -48,9 +41,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     setLoading(true);
-    const timer = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, [pathname]);
+      const timer = setTimeout(() => setLoading(false), 800);
+      return () => clearTimeout(timer);
+   }, [pathname]);
 
   // clock
   useEffect(() => {
@@ -76,30 +69,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       className="min-h-screen flex bg-cover bg-center bg-fixed"
       style={{ backgroundImage: "url('/bg2.png')" }}
     >
+
       <LoadingOverlay show={loading} />
 
-      {/* Sidebar */}
-      <Sidebar
-        selectedPage={selectedPage}
-        setLoading={setLoading}
-        setSelectedPage={setSelectedPage}
-        setShowLogoutOverlay={setShowLogoutOverlay}
-      />
+      {/* sidebar kiri */}
+      <div>
+        <Sidebar
+          selectedPage={selectedPage}
+          setLoading={setLoading}
+          setSelectedPage={setSelectedPage}
+          setShowLogoutOverlay={setShowLogoutOverlay}
+        />
+      </div>
 
-      {/* Konten kanan */}
-      <div className="flex-1 pl-[310px] pt-6 flex flex-col h-screen min-h-0">
-        {/* Header sticky */}
+      {/* konten kanan */}
+      <div className="flex-1 pl-[310px] pt-6">
+        {/* header sticky */}
         <div className="sticky top-0 z-10">
           <Header time={time} selectedPage={selectedPage} />
         </div>
 
-        {/* Konten scrollable hanya di bawah header */}
-        <div id="pm-scroll" className="flex-1 min-h-0 overflow-y-auto shadow-lg custom-scroll scroll-smooth">
-          {children}
-        </div>
+        {/* isi halaman */}
+        <div>{children}</div>
       </div>
 
-      {/* Logout Overlay */}
       {showLogoutOverlay && (
         <Logout
           setSelectedPage={setSelectedPage}
