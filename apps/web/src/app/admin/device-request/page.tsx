@@ -1,20 +1,18 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FaSearch } from "react-icons/fa";
 
 type Request = {
   id: number;
-  username: string;
+  username: String;
   address: string;
   segmen: string;
   detail_address: string;
   lat: number;
   lng: number;
-  status: string; // "pending" | "approved" | "rejected"
+  status: string;
 };
-
-const API_REQ = "/api/device-request"; // lewat proxy Next.js
 
 export default function AdminDeviceRequests(): React.JSX.Element {
   const [tableData, setTableData] = useState<Request[]>([]);
@@ -23,102 +21,48 @@ export default function AdminDeviceRequests(): React.JSX.Element {
   const [show, setShow] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [errMsg, setErrMsg] = useState<string | null>(null);
 
-  const pollTimerRef = useRef<number | null>(null);
-  const inflightRef = useRef<AbortController | null>(null);
-
-  async function fetchRequestsOnce(signal?: AbortSignal) {
-    setErrMsg(null);
-    try {
-      const res = await fetch(API_REQ, { cache: "no-store", signal });
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`GET ${API_REQ} -> ${res.status} ${text}`);
-      }
-      const text = await res.text();
-      const data: Request[] = text ? JSON.parse(text) : [];
-      const sorted = (Array.isArray(data) ? data : []).sort((a, b) => b.id - a.id);
-      setTableData(sorted);
-    } catch (e: any) {
-      if (e?.name === "AbortError") return;
-      console.error("fetchRequests error:", e);
-      setErrMsg("Gagal memuat data request. Cek server /api/device-request.");
-    }
-  }
-
-  const startPolling = () => {
-    if (pollTimerRef.current) window.clearInterval(pollTimerRef.current);
-    pollTimerRef.current = window.setInterval(() => {
-      if (document.visibilityState === "visible") {
-        inflightRef.current?.abort();
-        const c = new AbortController();
-        inflightRef.current = c;
-        fetchRequestsOnce(c.signal);
-      }
-    }, 5000);
+  const fetchRequests = async () => {
+    const res = await fetch("/api/device-request");
+     const data = await res.json();
+    
+    const sorted = data.sort((a: Request, b: Request) => b.id - a.id);
+    setTableData(sorted);
   };
 
   useEffect(() => {
-    const c = new AbortController();
-    inflightRef.current = c;
-    fetchRequestsOnce(c.signal);
-    startPolling();
-
-    const onVis = () => {
-      if (document.visibilityState === "visible") {
-        inflightRef.current?.abort();
-        const c2 = new AbortController();
-        inflightRef.current = c2;
-        fetchRequestsOnce(c2.signal);
-      }
-    };
-    document.addEventListener("visibilitychange", onVis);
-
-    return () => {
-      document.removeEventListener("visibilitychange", onVis);
-      if (pollTimerRef.current) window.clearInterval(pollTimerRef.current);
-      inflightRef.current?.abort();
-    };
+    fetchRequests();
+    const interval = setInterval(fetchRequests, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleAction = async (id: number, status: string, device_id?: string) => {
     setLoading(true);
-    setErrMsg(null);
-    try {
-      const res = await fetch(API_REQ, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status, device_id }),
-      });
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`PATCH ${API_REQ} -> ${res.status} ${text}`);
-      }
-      await fetchRequestsOnce();
-    } catch (e: any) {
-      console.error("handleAction error:", e);
-      setErrMsg("Aksi gagal. Cek route PATCH di backend.");
-    } finally {
-      setLoading(false);
-    }
+    await fetch("/api/device-request", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status, device_id }),
+    });
+    await fetchRequests();
+    setLoading(false);
   };
 
+  // debounce search
   useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
-    return () => window.clearTimeout(timer);
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
   }, [search]);
 
+  // reset page kalau filter berubah
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearch, show]);
 
   const filteredData = useMemo(() => {
-    const lower = debouncedSearch.toLowerCase();
+    const lowerSearch = debouncedSearch.toLowerCase();
     return tableData.filter((d) => {
       const combined = [
         d.id,
-        d.username,
         d.address,
         d.segmen,
         d.detail_address,
@@ -128,7 +72,7 @@ export default function AdminDeviceRequests(): React.JSX.Element {
       ]
         .join(" ")
         .toLowerCase();
-      return combined.includes(lower);
+      return combined.includes(lowerSearch);
     });
   }, [tableData, debouncedSearch]);
 
@@ -137,38 +81,28 @@ export default function AdminDeviceRequests(): React.JSX.Element {
     return filteredData.slice((currentPage - 1) * show, currentPage * show);
   }, [filteredData, show, currentPage]);
 
-  const totalPages = show === -1 ? 1 : Math.max(1, Math.ceil(filteredData.length / show));
-  const rowNumber = (indexInPage: number) =>
-    show === -1 ? indexInPage + 1 : (currentPage - 1) * show + indexInPage + 1;
+  const totalPages = show === -1 ? 1 : Math.ceil(filteredData.length / show);
 
   return (
     <div
-      className="
-        flex flex-col mx-auto sm:mr-8 rounded-2xl
-        box-border
-        h-[84dvh] max-h-[100dvh]
-        overflow-hidden
-        p-5 sm:p-4
-        pb-[max(env(safe-area-inset-bottom),12px)]
-      "
+      className="rounded-2xl p-4 mx-auto max-w-full mr-8"
       style={{
-        background: "linear-gradient(180deg, rgba(0,60,140,1) 0%, rgba(0,30,70,1) 100%)",
+        background:
+          "linear-gradient(180deg, rgba(0,60,140,1) 0%, rgba(0,30,70,1) 100%)",
       }}
     >
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2">
-        <h1 className="text-xl md:text-2xl font-bold text-white">Admin Device Requests</h1>
-        {errMsg && (
-          <div className="text-xs px-3 py-1 rounded bg-red-600/80 text-white border border-red-300/40">
-            {errMsg}
-          </div>
-        )}
+        <h1 className="text-xl md:text-2xl font-bold text-white">
+          Admin Device Requests
+        </h1>
       </div>
 
+      {/* Controls */}
       <div className="grid grid-cols-1 md:grid-cols-2 mb-4 text-white text-xs">
         <div className="flex flex-col">
           <label className="mb-1 font-semibold">Show</label>
           <select
-            className="bg-[#123060] p-2 rounded-lg w-13 text-xs"
+            className="bg-[#123060] p-2 rounded-lg w-20 text-xs"
             value={show}
             onChange={(e) => setShow(Number(e.target.value))}
           >
@@ -193,13 +127,17 @@ export default function AdminDeviceRequests(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto rounded-lg shadow-lg custom-scroll">
+      {/* Table */}
+      <div className="overflow-x-auto overflow-y-auto max-h-[310px] rounded-lg shadow-lg custom-scroll">
         <table className="min-w-full text-white text-xs">
           <thead className="bg-[#0C1F3C] border-b border-gray-700 sticky top-0 z-10">
             <tr>
-              {["NO", "Username", "Address", "Segmen", "Detail Loc", "Coordinate", "Status", "Action"].map(
+              {["NO", "Username", "Address", "Segmen", "Detail Loc", "coordinate", "Status", "Action"].map(
                 (header) => (
-                  <th key={header} className="px-4 py-4 text-left font-semibold uppercase tracking-wider">
+                  <th
+                    key={header}
+                    className="px-4 py-3 text-left font-semibold uppercase tracking-wider"
+                  >
                     {header}
                   </th>
                 )
@@ -209,7 +147,7 @@ export default function AdminDeviceRequests(): React.JSX.Element {
           <tbody>
             {paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-6">
+                <td colSpan={7} className="text-center py-3">
                   No data found
                 </td>
               </tr>
@@ -217,46 +155,52 @@ export default function AdminDeviceRequests(): React.JSX.Element {
               paginatedData.map((r, index) => (
                 <tr
                   key={r.id}
-                  className={`${index % 2 === 0 ? "bg-[#0C1F3C]" : "bg-[#1C345C]"} hover:bg-blue-800 transition`}
+                  className={`${
+                    index % 2 === 0 ? "bg-[#0C1F3C]" : "bg-[#1C345C]"
+                  } hover:bg-blue-800 transition`}
                 >
-                  <td className="px-2 py-2">{rowNumber(index)}</td>
-                  <td className="px-2 py-2">{r.username || "-"}</td>
-                  <td className="px-2 py-2">{r.address}</td>
-                  <td className="px-2 py-2">{r.segmen || "-"}</td>
-                  <td className="px-2 py-2">{r.detail_address || "-"}</td>
-                  <td className="px-2 py-2">
-                    {r.lat?.toFixed ? r.lat.toFixed(5) : r.lat}, {r.lng?.toFixed ? r.lng.toFixed(5) : r.lng}
+                  <td className="px-2 py-1">{r.id}</td>
+                  <td className="px-2 py-1">{r.username}</td>
+                  <td className="px-2 py-1">{r.address}</td>
+                  <td className="px-2 py-1">{r.segmen || "-"}</td>
+                  <td className="px-2 py-1">{r.detail_address || "-"}</td>
+                  <td className="px-2 py-1">
+                    {r.lat}, {r.lng}
                   </td>
-                  <td className="px-2 py-2">
+                  <td className="px-2 py-1">
                     <span
                       className={
                         r.status === "pending"
-                          ? "text-yellow-300"
+                          ? "text-yellow-400"
                           : r.status === "approved"
-                          ? "text-green-300 font-semibold"
-                          : "text-red-300 font-semibold"
+                          ? "text-green-400 font-bold"
+                          : "text-red-400 font-bold"
                       }
                     >
-                      {r.status?.toUpperCase?.() || "PENDING"}
+                      {r.status.toUpperCase()}
                     </span>
                   </td>
                   <td className="px-2 py-1">
                     {r.status === "pending" ? (
                       <div className="flex gap-2">
+                        {/* ✅ ubah tombol Approve */}
                         <button
                           disabled={loading}
                           onClick={() => {
+                            // 🔹 Simpan data request ke localStorage
                             localStorage.setItem("prefillDeviceData", JSON.stringify(r));
+
+                            // 🔹 Redirect ke halaman Device Management
                             window.location.href = "/admin/device-management";
                           }}
-                          className="bg-green-500 hover:bg-green-600 px-3 py-1 rounded text-xs text-white disabled:opacity-50"
+                          className="bg-green-500 hover:bg-green-600 px-3 py-1 rounded text-xs text-white"
                         >
                           Approve
                         </button>
                         <button
                           disabled={loading}
                           onClick={() => handleAction(r.id, "rejected")}
-                          className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-xs text-white disabled:opacity-50"
+                          className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-xs text-white"
                         >
                           Reject
                         </button>
@@ -272,13 +216,16 @@ export default function AdminDeviceRequests(): React.JSX.Element {
         </table>
       </div>
 
+      {/* Pagination */}
       {show !== -1 && (
         <div className="flex justify-center mt-4 gap-1 flex-wrap text-xs">
           <button
             disabled={currentPage === 1}
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             className={`px-3 py-1.5 rounded-full ${
-              currentPage === 1 ? "bg-gray-400" : "bg-gray-600 hover:bg-gray-700 text-white"
+              currentPage === 1
+                ? "bg-gray-400"
+                : "bg-gray-600 hover:bg-gray-700 text-white"
             }`}
           >
             Previous
@@ -289,7 +236,9 @@ export default function AdminDeviceRequests(): React.JSX.Element {
               key={i + 1}
               onClick={() => setCurrentPage(i + 1)}
               className={`px-3 py-1.5 rounded-full ${
-                currentPage === i + 1 ? "bg-blue-600 text-white" : "bg-gray-600 text-white hover:bg-gray-700"
+                currentPage === i + 1
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-600 text-white hover:bg-gray-700"
               }`}
             >
               {i + 1}
@@ -298,9 +247,13 @@ export default function AdminDeviceRequests(): React.JSX.Element {
 
           <button
             disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
             className={`px-3 py-1.5 rounded-full ${
-              currentPage === totalPages ? "bg-gray-400" : "bg-gray-600 hover:bg-gray-700 text-white"
+              currentPage === totalPages
+                ? "bg-gray-400"
+                : "bg-gray-600 hover:bg-gray-700 text-white"
             }`}
           >
             Next

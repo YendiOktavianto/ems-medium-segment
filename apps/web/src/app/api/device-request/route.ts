@@ -1,54 +1,60 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
-const BASE = (process.env.BACKEND_API || process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000')
-  .replace(/\/+$/, '');
-const PREFIX = (process.env.BACKEND_PREFIX || '').replace(/^\/|\/$/g, '');
-const TARGET = `${BASE}/${PREFIX ? PREFIX + '/' : ''}device-request`;
+type RequestItem = {
+  id: number;
+  address: string;
+  segmen: string;
+  detail_address: string;
+  lat: number;
+  lng: number;
+  status: string;
+  time: number;
+};
 
-function passthroughHeaders(req: NextRequest) {
-  const h = new Headers();
-  const ct = req.headers.get('content-type');
-  if (ct) h.set('content-type', ct);
-  const auth = req.headers.get('authorization');
-  if (auth) h.set('authorization', auth);
-  return h;
+let requests: RequestItem[] = [];
+
+// POST: user kirim request
+export async function POST(req: Request) {
+  const body = await req.json();
+  const { address, segmen, detail_address, lat, lng } = body;
+  const id = requests.length + 1;
+
+  const newReq: RequestItem = {
+    id,
+    address,
+    segmen,
+    detail_address,
+    lat,
+    lng,
+    status: "pending",
+    time: Date.now(),
+  };
+
+  requests.push(newReq);
+
+  return NextResponse.json(newReq);
 }
 
+// GET semua request
 export async function GET() {
-  const r = await fetch(TARGET, { cache: 'no-store' });
-  const text = await r.text();
-  return new NextResponse(text || '[]', {
-    status: r.status,
-    headers: { 'content-type': r.headers.get('content-type') || 'application/json' },
-  });
+  return NextResponse.json(requests);
 }
 
-export async function POST(req: NextRequest) {
-  const body = await req.text();
-  const r = await fetch(TARGET, { method: 'POST', headers: passthroughHeaders(req), body });
-  const text = await r.text();
-  return new NextResponse(text, {
-    status: r.status,
-    headers: { 'content-type': r.headers.get('content-type') || 'application/json' },
-  });
+// PATCH: update status request
+export async function PATCH(req: Request) {
+  const body = await req.json();
+  const { id, status } = body;
+  const idx = requests.findIndex((r) => r.id === id);
+  if (idx === -1) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  requests[idx].status = status;
+  return NextResponse.json(requests[idx]);
 }
 
-export async function PATCH(req: NextRequest) {
-  const body = await req.text();
-  const r = await fetch(TARGET, { method: 'PATCH', headers: passthroughHeaders(req), body });
-  const text = await r.text();
-  return new NextResponse(text, {
-    status: r.status,
-    headers: { 'content-type': r.headers.get('content-type') || 'application/json' },
-  });
+// supaya bisa diakses dari module lain
+export function getRequests() {
+  return requests;
 }
-
-export async function DELETE(req: NextRequest) {
-  const body = await req.text();
-  const r = await fetch(TARGET, { method: 'DELETE', headers: passthroughHeaders(req), body });
-  const text = await r.text();
-  return new NextResponse(text, {
-    status: r.status,
-    headers: { 'content-type': r.headers.get('content-type') || 'application/json' },
-  });
+export function updateRequests(newRequests: RequestItem[]) {
+  requests = newRequests;
 }

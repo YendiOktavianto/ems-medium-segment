@@ -9,6 +9,17 @@ export default function SiteMonitoring() {
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
   });
 
+  type Location = {
+    id: string;
+    lat: number;
+    lng: number;
+    address_name: string;
+    detail_address?: string;
+    device_id?: string;
+    segment?: string;
+    isActive: boolean;
+  };
+
   const userId = "123";
   const token = "user-jwt-token";
 
@@ -24,6 +35,16 @@ export default function SiteMonitoring() {
     fetchedLocations && fetchedLocations.length > 0
       ? fetchedLocations
       : [
+          {
+            id: "default-1",
+            lat: -7.304446483292537,
+            lng: 110.48842948121239,
+            address_name: "jl.soka sari no 17 rt 10/ rw 07 sidorejo, sidorejoLor, salatiga, jawa tengah",
+            detail_address: "",
+            device_id: "",
+            segment: "",
+            isActive: false,
+          },
           {
             id: "default-2",
             lat: -7.324446483292537,

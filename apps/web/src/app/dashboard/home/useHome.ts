@@ -1,6 +1,6 @@
-"use client";
+// useHome.ts
 import { useState, useEffect } from "react";
-import type { Device } from "./types";
+import { Device } from "./types";
 import { API_ENDPOINT } from "./constants";
 
 export function useHome(userId?: string, token?: string) {
@@ -17,7 +17,10 @@ export function useHome(userId?: string, token?: string) {
         });
         const data: Device[] = await res.json();
         setDevices(data);
-        if (data.length > 0) setSelectedDeviceId(data[0].device_id);
+
+        if (data.length > 0) {
+          setSelectedDeviceId(data[0].device_id);
+        }
       } catch (error) {
         console.error("Error fetching devices:", error);
       }
@@ -29,5 +32,10 @@ export function useHome(userId?: string, token?: string) {
   const currentDevice: Device | null =
     devices.find((d) => d.device_id === selectedDeviceId) ?? null;
 
-  return { devices, selectedDeviceId, setSelectedDeviceId, currentDevice };
+  return {
+    devices,
+    selectedDeviceId,
+    setSelectedDeviceId,
+    currentDevice,
+  };
 }

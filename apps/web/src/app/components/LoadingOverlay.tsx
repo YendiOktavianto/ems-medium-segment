@@ -37,7 +37,7 @@ export default function LoadingOverlay({ show, text }: LoadingOverlayProps) {
 
       {/* Loading Text */}
       <motion.p
-        className="text-white text-xs font-medium"
+        className="text-white text-lg font-medium"
         initial={{ opacity: 0, y: 5 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0, duration: 0.25 }} // teks muncul cepat

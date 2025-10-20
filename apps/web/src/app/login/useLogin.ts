@@ -1,4 +1,3 @@
-// useLogin.ts
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -16,7 +15,6 @@ export const useLogin = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -38,6 +36,8 @@ export const useLogin = () => {
     setLoading(true);
 
     try {
+      console.debug("[ENV] API_URL =", API_URL);
+      console.debug("[LOGIN][REQ]", { url: `${API_URL}/auth/login`, body: { ...form, rememberMe } });
       const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -47,32 +47,37 @@ export const useLogin = () => {
 
       const data = await res.json();
 
-      if (!res.ok) {
-        const msg = (data.message || "").toLowerCase();
-        if (msg.includes("username") || msg.includes("identifier")) {
-          setErrors({ identifier: "we couldn't find an account with this username or email", password: "" });
-          setToastMessage("❌ Login failed! Please check your inputs.");
+    if (!res.ok) {
+      // 1) Backend baru: pakai payload per-field
+      if (data?.errors && typeof data.errors === "object") {
+        setErrors({
+          identifier: data.errors.identifier ?? "",
+          password:   data.errors.password   ?? "",
+        });
+      } else {
+        // 2) Fallback backend lama: parse message tunggal
+        const msg = String(data?.message ?? "").toLowerCase();
+        if (msg.includes("username") || msg.includes("email") || msg.includes("identifier")) {
+          setErrors({ identifier: "Incorrect Email or Username", password: "" });
         } else if (msg.includes("password")) {
-          setErrors({ identifier: "", password: "the password you entered is incorrect" });
-          setToastMessage("❌ Login failed! Please check your inputs.");
+          setErrors({ identifier: "", password: "Incorrect Password" });
+        } else if (msg.includes("invalid credentials")) {
+          // tampilkan dua-duanya jika pesan generik
+          setErrors({ identifier: "Incorrect Email or Username", password: "Incorrect Password" });
         } else {
           setErrors({ identifier: "", password: ERROR_MESSAGES.unknownError });
-          setToastMessage("❌ Login failed! Please check your inputs.");
         }
-        setLoading(false);
-        return;
       }
+      setLoading(false);
+      return;
+    }
 
-      // ✅ Login sukses
       const role = (data?.role || data?.user?.role || "user") as Role;
       const target = ROLE_REDIRECT?.[role] || "/dashboard";
-      setToastMessage("✅ Login successful!");
-      setTimeout(() => {
-        router.push(target);
-      }, 1000);
+      console.debug("[LOGIN] redirect ->", target);
+      router.push(target);
     } catch (err) {
       setErrors({ identifier: ERROR_MESSAGES.serverError, password: "" });
-      setToastMessage("❌ Server error, please try again later");
       setLoading(false);
     }
   };
@@ -87,8 +92,6 @@ export const useLogin = () => {
     setRememberMe,
     handleChange,
     handleSubmit,
-    toastMessage,
-    setToastMessage,
     router,
   };
 };

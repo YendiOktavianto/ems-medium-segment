@@ -105,14 +105,7 @@ export default function DataTable() {
 
   return (
     <div
-      className="
-        flex flex-col mx-auto sm:mr-8 rounded-2xl
-        box-border                 /* padding tidak menambah tinggi total */
-        h-[84dvh] max-h-[100dvh]  /* kunci: tinggi layar tanpa scroll */
-        overflow-hidden
-        p-5 sm:p-4
-        pb-[max(env(safe-area-inset-bottom),12px)]  /* aman di bawah */
-      "
+      className="rounded-2xl p-4 mx-auto max-w-full mr-8"
       style={{
         background:
           "linear-gradient(180deg, rgba(0,60,140,1) 0%, rgba(0,30,70,1) 100%)",
@@ -204,7 +197,7 @@ export default function DataTable() {
       </div>
 
       {/* Table */}
-      <div className="flex-1 min-h-0 overflow-auto rounded-lg shadow-lg custom-scroll">
+      <div className="overflow-x-auto overflow-y-auto max-h-[310px] rounded-lg shadow-lg custom-scroll">
         <table className="min-w-full text-white text-xs">
           <thead className="bg-[#0C1F3C] border-b border-gray-700 sticky top-0 z-10">
             <tr>
@@ -221,7 +214,7 @@ export default function DataTable() {
                 <th
                   key={header}
                   scope="col"
-                  className="px-4 py-4 text-left font-semibold uppercase tracking-wider"
+                  className="px-4 py-3 text-left font-semibold uppercase tracking-wider"
                 >
                   {header}
                 </th>
@@ -243,14 +236,14 @@ export default function DataTable() {
                     index % 2 === 0 ? "bg-[#0C1F3C]" : "bg-[#1C345C]"
                   } hover:bg-blue-800`}
                 >
-                  <td className="px-2 py-2">{row.id}</td>
-                  <td className="px-2 py-2">{row.date}</td>
-                  <td className="px-2 py-2">{row.time}</td>
-                  <td className="px-2 py-2">{row.voltage}</td>
-                  <td className="px-2 py-2">{row.current}</td>
-                  <td className="px-2 py-2">{row.frequency}</td>
-                  <td className="px-2 py-2">{row.cos}</td>
-                  <td className="px-2 py-2">{row.power}</td>
+                  <td className="px-2 py-1">{row.id}</td>
+                  <td className="px-2 py-1">{row.date}</td>
+                  <td className="px-2 py-1">{row.time}</td>
+                  <td className="px-2 py-1">{row.voltage}</td>
+                  <td className="px-2 py-1">{row.current}</td>
+                  <td className="px-2 py-1">{row.frequency}</td>
+                  <td className="px-2 py-1">{row.cos}</td>
+                  <td className="px-2 py-1">{row.power}</td>
                 </tr>
               ))
             )}

@@ -1,8 +1,7 @@
-// app/admin/components/AdminSidebar.tsx
 "use client";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, Circle } from "lucide-react"; 
+import { ChevronDown, ChevronUp, Circle } from "lucide-react"; // Circle jadi bullet dot
 import { flushSync } from "react-dom";
 
 export default function Sidebar({
@@ -13,9 +12,8 @@ export default function Sidebar({
 }: any) {
   const router = useRouter();
   const [isReportOpen, setIsReportOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false); // 🔹 dropdown Edit
 
-  const handleClick = async (key: string, path?: string) => {
+  const handleClick = async(key: string, path?: string) => {
     setSelectedPage(key);
     if (key === "Logout") {
       setShowLogoutOverlay(true);
@@ -70,18 +68,19 @@ export default function Sidebar({
       activeIcon: "/cost_active.svg",
       path: "/admin/list-cost-energy",
     },
-    // ⛔️ Edit pages dihapus dari top-level; dipindah ke dropdown Edit
   ];
 
   const reportMenus = [
-    { key: "Summary Report", label: "Summary Report", path: "/admin/report/summary-report" },
-    { key: "Energy Usage Report", label: "Energy Usage Report", path: "/admin/report/energy-usage-report" },
-  ];
-
-  const editMenus = [
-    { key: "Edit Landing Page", label: "Edit Landing Page", path: "/admin/edit-landing" },
-    { key: "Edit Company", label: "Edit Company", path: "/admin/edit-company" },
-    { key: "Edit Product", label: "Edit Product", path: "/admin/product-edit" },
+    {
+      key: "Summary Report",
+      label: "Summary Report",
+      path: "/admin/report/summary-report",
+    },
+    {
+      key: "Energy Usage Report",
+      label: "Energy Usage Report",
+      path: "/admin/report/energy-usage-report",
+    },
   ];
 
   const isReportActive =
@@ -89,41 +88,31 @@ export default function Sidebar({
     selectedPage === "Summary Report" ||
     selectedPage === "Energy Usage Report";
 
-  const isEditActive =
-    selectedPage === "Edit" ||
-    selectedPage === "Edit Landing Page" ||
-    selectedPage === "Edit Company" ||
-    selectedPage === "Edit Product";
-
   useEffect(() => {
-    if (selectedPage === "Summary Report" || selectedPage === "Energy Usage Report") {
-      setIsReportOpen(true);
-    }
     if (
-      selectedPage === "Edit Landing Page" ||
-      selectedPage === "Edit Company" ||
-      selectedPage === "Edit Product"
+      selectedPage === "Summary Report" ||
+      selectedPage === "Energy Usage Report"
     ) {
-      setIsEditOpen(true);
+      setIsReportOpen(true);
     }
   }, [selectedPage]);
 
   return (
     <aside
-      className="w-64 flex flex-col p-3 rounded-t-2xl mt-4 ml-4 h-screen fixed select-none"
+      className="w-65 flex flex-col p-4 rounded-t-2xl mt-4 ml-4 h-screen fixed select-none"
       style={{
         background:
           "linear-gradient(100deg, rgba(6,11,40,1) 50%, rgba(26,31,55,0) 100%)",
       }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-2 text-base font-bold text-white mb-1">
+      <div className="flex items-center gap-2 mb-1">
         <img src="/logo2.svg" alt="logo" className="w-100" />
       </div>
-      <img src="/line.svg" alt="line" className="w-60 h-6 mb-2" />
+      <img src="/line.svg" alt="line" className="w-67 h-5 mb-2" />
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-hidden flex flex-col text-[11px] leading-tight">
+      <nav className="flex-1 overflow-y-auto flex flex-col text-xs custom-scroll">
         {menus.map((item) => {
           const isActive = selectedPage === item.key;
           return (
@@ -132,9 +121,8 @@ export default function Sidebar({
               onClick={() => {
                 handleClick(item.key, item.path);
                 setIsReportOpen(false);
-                setIsEditOpen(false);
               }}
-              className={`flex items-center gap-3 px-3 py-1.5 rounded-lg cursor-pointer transition-colors duration-200 ${
+              className={`flex items-center gap-4 px-3 py-2 rounded-lg cursor-pointer transition-colors duration-200 ${
                 isActive
                   ? "bg-[#1A1F37] text-white font-medium"
                   : "text-gray-300 hover:text-white hover:bg-[#1A1F37]"
@@ -193,7 +181,6 @@ export default function Sidebar({
                       onClick={() => {
                         handleClick(rep.key, rep.path);
                         setIsReportOpen(true);
-                        setIsEditOpen(false);
                       }}
                       className={`relative flex items-center gap-2 pl-12 pr-3 py-2 rounded-md transition-colors duration-150 group ${
                         activeSub
@@ -224,81 +211,11 @@ export default function Sidebar({
           )}
         </div>
 
-        {/* Edit (dropdown baru) */}
-        <div className="flex flex-col mt-1.5">
-          <div
-            className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors duration-200 text-xs ${
-              isEditActive
-                ? "bg-[#1A1F37] text-white font-medium"
-                : "text-gray-300 hover:text-white hover:bg-[#1A1F37]"
-            }`}
-            onClick={() => {
-              setIsEditOpen(!isEditOpen);
-            }}
-          >
-            <div className="flex items-center gap-4">
-              {/* gunakan icon yang sudah ada agar aman */}
-              <img
-                src={isEditActive ? "/cost_active.svg" : "/cost.svg"}
-                alt="Edit"
-                className="w-6 h-6"
-              />
-              <span>Edit</span>
-            </div>
-            {isEditOpen ? (
-              <ChevronUp size={14} className="text-gray-300" />
-            ) : (
-              <ChevronDown size={14} className="text-gray-300" />
-            )}
-          </div>
-
-          {/* Submenu Edit */}
-          {isEditOpen && (
-            <div className=" bg-[#0d1225]/70 rounded-md border border-gray-700/50 py-2">
-              <div className="flex flex-col space-y-1">
-                {editMenus.map((em) => {
-                  const activeSub = selectedPage === em.key;
-                  return (
-                    <a
-                      key={em.key}
-                      onClick={() => {
-                        handleClick(em.key, em.path);
-                        setIsEditOpen(true);
-                        setIsReportOpen(false);
-                      }}
-                      className={`relative flex items-center gap-2 pl-12 pr-3 py-2 rounded-md transition-colors duration-150 group ${
-                        activeSub
-                          ? "text-blue-400 font-medium bg-[#1A1F37]"
-                          : "text-gray-400 hover:text-blue-400 hover:bg-[#1A1F37]/70"
-                      }`}
-                    >
-                      <Circle
-                        size={6}
-                        className={`absolute left-8 ${
-                          activeSub
-                            ? "text-blue-400"
-                            : "text-gray-500 group-hover:text-blue-400"
-                        }`}
-                        fill={activeSub ? "#60a5fa" : "none"}
-                      />
-                      <span>{em.label}</span>
-                      {activeSub && (
-                        <span className="absolute left-0 top-0 h-full w-1 bg-blue-400 rounded-r"></span>
-                      )}
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Logout */}
         <a
           onClick={() => {
             handleClick("Logout");
             setIsReportOpen(false);
-            setIsEditOpen(false);
           }}
           className={`flex items-center gap-4 px-3 py-2 rounded-lg cursor-pointer transition-colors duration-200 text-xs ${
             selectedPage === "Logout"
