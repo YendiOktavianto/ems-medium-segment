@@ -1,12 +1,42 @@
 "use client";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
+
+const POWER_SUBS = new Set([
+  "Voltage",
+  "Current",
+  "Frequency",
+  "Power Factor",
+  "Power",
+  "Energy Usage",
+]);
+const REPORT_SUBS = new Set(["Summary Report", "Energy Usage Report"]);
 
 export default function Header({ time, selectedPage }: any) {
+  const pathname = usePathname() || "";
+
+  // Build crumbs
+  const crumbs: string[] = ["Pages"];
+  if (pathname.startsWith("/dashboard/power-monitoring")) {
+    crumbs.push("Power Monitoring");
+    if (POWER_SUBS.has(selectedPage)) crumbs.push(selectedPage);
+  } else if (pathname.startsWith("/dashboard/report")) {
+    crumbs.push("Report");
+    if (REPORT_SUBS.has(selectedPage)) crumbs.push(selectedPage);
+  } else if (selectedPage) {
+    crumbs.push(selectedPage);
+  }
+
   return (
     <div className="flex justify-between items-center mb-6 mr-8">
       {/* Breadcrumb */}
       <div className="text-[10px] font-normal text-gray-300">
-        Pages / <span className="text-white">{selectedPage}</span>
+        {crumbs.map((c, i) => (
+          <span key={i}>
+            {i > 0 && " / "}
+            <span className={i === crumbs.length - 1 ? "text-white" : ""}>{c}</span>
+          </span>
+        ))}
       </div>
 
       {/* Right (Clock + Profile) */}

@@ -94,7 +94,14 @@ export default function DataTable() {
 
   return (
     <div
-      className="rounded-2xl p-4 mx-auto max-w-full mr-8"
+      className="
+        flex flex-col mx-auto sm:mr-8 rounded-2xl
+        box-border                 /* padding tidak menambah tinggi total */
+        h-[84dvh] max-h-[100dvh]  /* kunci: tinggi layar tanpa scroll */
+        overflow-hidden
+        p-5 sm:p-4
+        pb-[max(env(safe-area-inset-bottom),12px)]  /* aman di bawah */
+      "
       style={{
         background:
           "linear-gradient(180deg, rgba(0,60,140,1) 0%, rgba(0,30,70,1) 100%)",
@@ -122,7 +129,7 @@ export default function DataTable() {
           <select
             value={show}
             onChange={(e) => setShow(Number(e.target.value))}
-            className="bg-[#123060] p-2 rounded-lg w-13 text-xs"
+            className="p-2 rounded-lg bg-[#123060] text-white text-xs w-13"
           >           
             <option value={10}>10</option>
             <option value={25}>25</option>
@@ -172,7 +179,7 @@ export default function DataTable() {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto overflow-y-auto max-h-[310px] rounded-lg shadow-lg custom-scroll">
+      <div className="flex-1 min-h-0 overflow-auto rounded-lg shadow-lg custom-scroll">
         <table className="min-w-full text-white text-xs">
           <thead className="bg-[#0C1F3C] border-b border-gray-700 sticky top-0 z-10">
             <tr>
@@ -187,7 +194,7 @@ export default function DataTable() {
                 <th
                   key={h}
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold uppercase tracking-wider"
+                  className="px-4 py-4 text-left font-semibold uppercase tracking-wider"
                 >
                   {h}
                 </th>
@@ -197,7 +204,7 @@ export default function DataTable() {
           <tbody>
             {paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-3">
+                <td colSpan={6} className="text-center py-6">
                   No data found
                 </td>
               </tr>
@@ -209,16 +216,16 @@ export default function DataTable() {
                     index % 2 === 0 ? "bg-[#0C1F3C]" : "bg-[#1C345C]"
                   }
                 >
-                  <td className="px-2 py-1">{row.id}</td>
-                  <td className="px-2 py-1">
+                  <td className="px-2 py-2">{row.id}</td>
+                  <td className="px-2 py-2">
                     {new Date(row.date).toLocaleDateString("en-GB")}
                   </td>
-                  <td className="px-2 py-1">{row.time}</td>
-                  <td className="px-2 py-1">{row.energy}</td>
-                  <td className="px-2 py-1">
+                  <td className="px-2 py-2">{row.time}</td>
+                  <td className="px-2 py-2">{row.energy}</td>
+                  <td className="px-2 py-2">
                     {row.cost.toLocaleString("id-ID")}
                   </td>
-                  <td className="px-2 py-1">
+                  <td className="px-2 py-2">
                     {row.mtd_usage_cost.toLocaleString("id-ID")}
                   </td>
                   

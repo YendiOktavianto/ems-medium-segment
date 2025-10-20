@@ -37,7 +37,7 @@ export default function ResetPassword() {
         </h1>
         <p className="font-light text-center text-white mb-4">Enter your new password below</p>
 
-        <form className="flex flex-col w-full gap-4" onSubmit={handleSubmit}>
+        <form className="flex flex-col w-full gap-4" onSubmit={e => { e.preventDefault(); handleSubmit(); }}>
           {/* password */}
           <div>
             <div className="relative w-full flex items-center px-4 h-12 bg-gray-800 rounded-full text-white focus-within:ring-2 focus-within:ring-blue-500 transition">

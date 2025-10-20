@@ -3,14 +3,12 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { VerifyState, MessageType } from "./type";
 import { validateOTP } from "./validation";
-import { MESSAGES, OTP_LENGTH } from "./constants"; 
-import { jsonFetch } from "../lib/api";
-import { errorMessage } from "../lib/error";
+import { MESSAGES, OTP_LENGTH } from "./constants";
 
 export const useVerify = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const email = searchParams?.get("email") || "";
+  const email = searchParams?.get("email") || "example@gmail.com";
 
   const [state, setState] = useState<VerifyState>({ code: Array(OTP_LENGTH).fill("") });
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -20,10 +18,11 @@ export const useVerify = () => {
 
   // Countdown timer untuk resend
   useEffect(() => {
-    inputRefs.current[0]?.focus();
-    if (timer <= 0) return;
-    const t = setTimeout(() => setTimer((s) => s - 1), 1000);
-    return () => clearTimeout(t);
+    let interval: NodeJS.Timeout;
+    if (timer > 0) {
+      interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
+    }
+    return () => clearInterval(interval);
   }, [timer]);
 
   // otomatis hilangkan pesan sukses/error setelah 5 detik
@@ -36,70 +35,50 @@ export const useVerify = () => {
     return () => clearTimeout(timeout);
   }, [messageType]);
 
-  const handleChange = (idx: number, val: string) => {
-    setMessage("");
-    if (!/^\d?$/.test(val)) return; // hanya digit
-    setState((s) => {
-      const next = [...s.code];
-      next[idx] = val;
-      return { code: next };
-    });
-    if (val && idx < OTP_LENGTH - 1) inputRefs.current[idx + 1]?.focus();
-  };
-
-  const handleKeyDown = (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !state.code[idx] && idx > 0) {
-      inputRefs.current[idx - 1]?.focus();
+  const handleChange = (value: string, index: number) => {
+    if (/^[0-9]?$/.test(value)) {
+      const newCode = [...state.code];
+      newCode[index] = value;
+      setState({ code: newCode });
+      if (value && index < OTP_LENGTH - 1 && inputRefs.current[index + 1]) {
+        inputRefs.current[index + 1]?.focus();
+      }
     }
   };
 
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === "Backspace" && !state.code[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
 
-    const err = validateOTP(state.code);
-    if (err) {
-      setMessage(err);
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const validationError = validateOTP(state.code);
+    if (validationError) {
       setMessageType("error");
+      setMessage(validationError);
       return;
     }
-    
-    const code = state.code.join("");
 
-    try {
-      const res = await jsonFetch<{ ok: boolean }>("/auth/verify-reset-code", {
-        method: "POST",
-        body: JSON.stringify({ email, code }),
-      });
-      if (!res.ok) {
-        setMessage(MESSAGES.invalidCode);
-        setMessageType("error");
-        return;
-      }
-      setMessage(MESSAGES.success);
-      setMessageType("success");
-      // arahkan ke resetpassword sambil bawa email & code
-      router.push(`/resetpassword?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`);
-    } catch (e: unknown) {
-      setMessage(errorMessage(e, MESSAGES.invalidCode));
+    // Dummy backend check
+    const isValid = state.code.join("") === "1234";
+    if (!isValid) {
       setMessageType("error");
+      setMessage(MESSAGES.invalidCode);
+      return;
     }
+
+    setMessageType("success");
+    setMessage(MESSAGES.success);
+    setTimeout(() => router.push("/resetpassword"), 1500);
   };
 
-  const handleResend = async () => {
-    if (timer > 0) return;
-    try {
-      await jsonFetch<{ ok: boolean }>("/auth/forgot-password", {
-        method: "POST",
-        body: JSON.stringify({ email }),
-      });
-      setMessage(MESSAGES.resendSuccess(email));
-      setMessageType("success");
-      setTimer(60);
-    } catch (e: unknown) {
-      setMessage(errorMessage(e, "Failed to resend code"));
-      setMessageType("error");
-    }
+  const handleResend = () => {
+    // TODO: panggil API backend
+    setMessageType("success");
+    setMessage(MESSAGES.resendSuccess(email));
+    setTimer(60);
   };
 
   return {

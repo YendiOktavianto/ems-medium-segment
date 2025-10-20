@@ -1,6 +1,6 @@
 "use client";
 
-import { jsonFetch } from "@/app/lib/api";
+import { jsonFetch } from "../../lib/api";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import { FC } from "react";

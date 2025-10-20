@@ -1,4 +1,3 @@
-/* eslint-disable react/no-unescaped-entities */
 "use client";
 import Image from "next/image";
 import { useVerify } from "./useVerify";
@@ -41,30 +40,18 @@ export default function VerifyUI() {
             {state.code.map((num, idx) => (
               <input
                 key={idx}
-                ref={(el) => { inputRefs.current[idx] = el; }}
                 type="text"
+                maxLength={1}
+                value={num}
+                autoFocus={idx === 0}
+                ref={(el: HTMLInputElement | null) => {
+                  inputRefs.current[idx] = el;
+                }}
+                onChange={(e) => handleChange(e.target.value, idx)}
+                onKeyDown={(e) => handleKeyDown(e, idx)}
+                className="w-12 h-12 text-center text-white bg-gray-800/60 rounded-lg outline-none focus:ring-2 focus:ring-[#2196F3] transition-all"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                maxLength={1}
-                value={num ?? ""}
-                autoFocus={idx === 0}
-                onChange={(e) => {
-                  const v = e.target.value.replace(/\D/g, "").slice(-1); // hanya 1 digit
-                  handleChange(idx, v);
-                }}
-                onKeyDown={(e) => handleKeyDown(idx, e)}
-                onPaste={(e) => {
-                  e.preventDefault();
-                  const pasted = e.clipboardData.getData("text").replace(/\D/g, "");
-                  if (!pasted) return;
-                  for (let i = 0; i < state.code.length; i++) {
-                    handleChange(i, pasted[i] ?? "");
-                  }
-                  const last = Math.min(pasted.length, state.code.length) - 1;
-                  if (last >= 0) inputRefs.current[last]?.focus();
-                }}
-                className="w-12 h-12 text-center text-white bg-gray-800/60 rounded-lg outline-none focus:ring-2 focus:ring-[#2196F3] transition-all"
-                aria-label={`OTP digit ${idx + 1}`}
               />
             ))}
           </div>

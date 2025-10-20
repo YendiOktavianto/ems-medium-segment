@@ -1,9 +1,13 @@
 /* eslint-disable react/no-unescaped-entities */
 "use client";
 import Image from "next/image";
+import { useState, useEffect } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useLogin } from "./useLogin";
+import LoadingOverlay from "../components/LoadingOverlay";
 export default function LoginUI() {
+  const [isLoading, setIsLoading] = useState(true);
+
   const {
     form,
     errors,
@@ -14,11 +18,27 @@ export default function LoginUI() {
     setRememberMe,
     handleChange,
     handleSubmit,
+    toastMessage,
+    setToastMessage,
     router,
   } = useLogin();
 
   const handleRegisterRedirect = () => router.push("/register");
   const handleForgotPasswordRedirect = () => router.push("/forgot");
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage, setToastMessage]);
+
+  useEffect(() => {
+      const timer = setTimeout(() => setIsLoading(false), 2000);
+      return () => clearTimeout(timer);
+    }, []);
+  
+    if (isLoading) return <LoadingOverlay show={true} text="Loading..." />;
 
   return (
     <div
@@ -104,6 +124,21 @@ export default function LoginUI() {
           </button>
         </div>
       </div>
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          className={`fixed top-6 left-1/2 -translate-x-1/2 px-5 py-2 rounded-lg shadow-lg text-sm animate-fade-in-out z-[9999]
+            ${
+              toastMessage.includes("❌")
+                ? "bg-red-600"
+                : toastMessage.includes("✅")
+                ? "bg-green-600"
+                : "bg-blue-600"
+            } text-white`}
+        >
+          {toastMessage}
+         </div>
+      )}
     </div>
   );
 }
